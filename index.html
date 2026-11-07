@@ -2,125 +2,891 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catálogo Toys</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f9; color: #333; }
-        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        h1 { text-align: center; color: #2c3e50; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: left; vertical-align: middle; }
-        th { background-color: #3498db; color: white; }
-        img.product-img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; }
-        .form-group { margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; }
-        .form-group input { padding: 8px; flex: 1; min-width: 150px; }
-        button { background-color: #27ae60; color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 4px; }
-        button:hover { background-color: #219653; }
-        .btn-danger { background-color: #e74c3c; }
-        .btn-danger:hover { background-color: #c0392b; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crea tu catálogo exclusivo para tu tienda - Pedidos por WhatsApp</title>
+  <meta name="description" content="Plataforma SaaS para crear catálogos en línea exclusivos para ropa, comida, celulares, tecnología y cualquier negocio con pedidos directos a WhatsApp.">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body { font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; }
+    .font-mono, .tabular-nums { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+  </style>
 </head>
-<body>
-    <div class="container">
-        <h1>Catálogo Toys</h1>
-        
-        <!-- Formulario para agregar productos -->
-        <div style="background: #ecf0f1; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
-            <h3>Añadir / Editar Producto</h3>
-            <div class="form-group">
-                <input type="text" id="nombre" placeholder="Nombre del producto">
-                <input type="number" id="precio" placeholder="Precio ($)">
-                <input type="number" id="stock" placeholder="Stock disponible">
-                <input type="number" id="descuento" placeholder="Descuento % (50 al 100)" min="50" max="100">
-                <input type="text" id="descripcion" placeholder="Descripción">
-                <input type="text" id="imagen" placeholder="URL de la imagen">
-            </div>
-            <button onclick="agregarProducto()">Guardar Producto</button>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
+
+  <!-- Encabezado de Navegación -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-6">
+      <div class="flex items-center gap-3">
+        <a href="?" class="flex items-center gap-2.5 group">
+          <div class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+            <i data-lucide="store" class="w-5 h-5"></i>
+          </div>
+          <div class="flex flex-col">
+            <span class="text-lg sm:text-xl font-bold tracking-tight text-slate-900">
+              Catálogo <span class="text-blue-600">Exclusivo</span>
+            </span>
+            <span class="text-[10px] text-slate-400 font-medium hidden sm:inline -mt-1">
+              Crea tu catálogo exclusivo para tu tienda
+            </span>
+          </div>
+        </a>
+      </div>
+
+      <nav class="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
+        <button onclick="app.viewDemoStore()" class="hover:text-blue-600 transition-colors">Ver Tienda Demo</button>
+        <span id="nav-owner-links" class="hidden items-center gap-6">
+          <button onclick="app.navigateHome()" class="hover:text-blue-600 transition-colors">Panel de Administración</button>
+          <button onclick="app.viewMyPublicCatalog()" class="hover:text-blue-600 transition-colors flex items-center gap-1.5">
+            <span>Mi Catálogo Público</span>
+            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+          </button>
+        </span>
+      </nav>
+
+      <div id="nav-auth-container" class="flex items-center gap-2 shrink-0"></div>
+    </div>
+  </header>
+
+  <!-- Contenedor Principal de la Aplicación -->
+  <div id="app-root" class="flex-1"></div>
+
+  <!-- Modal de Autenticación -->
+  <div id="auth-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-100">
+      <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+        <div>
+          <h3 id="auth-modal-title" class="text-xl font-bold text-slate-900">Iniciar Sesión</h3>
+          <p id="auth-modal-desc" class="text-xs text-slate-500 mt-0.5">Accede a tu panel para gestionar tus productos y pedidos</p>
+        </div>
+        <button onclick="app.closeAuthModal()" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="px-6 pt-4 pb-2">
+        <div class="flex rounded-lg bg-slate-100 p-1">
+          <button id="auth-tab-login" onclick="app.setAuthMode('login')" class="flex-1 py-1.5 text-xs font-semibold rounded-md bg-white text-slate-900 shadow-sm">
+            Ya tengo cuenta
+          </button>
+          <button id="auth-tab-register" onclick="app.setAuthMode('register')" class="flex-1 py-1.5 text-xs font-semibold rounded-md text-slate-600 hover:text-slate-900">
+            Nuevo registro ($30 USD)
+          </button>
+        </div>
+      </div>
+
+      <div id="auth-dynamic-notice" class="mx-6 my-2"></div>
+      <div id="auth-error-box" class="mx-6 my-2 hidden p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700"></div>
+
+      <form id="auth-form" onsubmit="app.handleAuthSubmit(event)" class="p-6 space-y-3.5">
+        <div id="register-fields" class="space-y-3.5 hidden">
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">Nombre de tu Tienda o Negocio</label>
+            <input type="text" id="auth-store-name" placeholder="Ej. Boutique Urbana, TecnoStore, Burger House" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-900 mb-1">Número de Teléfono de WhatsApp (con código de país) *</label>
+            <input type="tel" id="auth-whatsapp" placeholder="Ej. +52 1 55 1234 5678 o +34 612 345 678" class="w-full px-3 py-2 text-sm bg-emerald-50/50 border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono">
+            <p class="text-[11px] text-slate-500 mt-0.5">Tus clientes usarán este número para enviar pedidos directos desde el catálogo.</p>
+          </div>
         </div>
 
-        <!-- Tabla del Catálogo -->
-        <table>
-            <thead>
-                <tr>
-                    <th>Imagen</th>
-                    <th>Nombre</th>
-                    <th>Descripción</th>
-                    <th>Precio Original</th>
-                    <th>Descuento</th>
-                    <th>Precio Final</th>
-                    <th>Stock</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody id="tabla-productos">
-                <!-- Los productos se cargarán aquí -->
-            </tbody>
-        </table>
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">Correo Electrónico</label>
+          <input type="email" id="auth-email" required placeholder="tu@email.com" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">Contraseña</label>
+          <input type="password" id="auth-password" required placeholder="••••••••" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <button type="submit" id="auth-submit-btn" class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 text-sm">
+          <span>Entrar al Panel</span>
+        </button>
+      </form>
+
+      <div class="px-6 pb-6 pt-1 border-t border-slate-100 bg-slate-50/70">
+        <p class="text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-2">Accesos Rápidos de Prueba</p>
+        <div class="space-y-1.5">
+          <button onclick="app.quickLogin('tastess07@gmail.com')" class="w-full py-2 px-3 text-xs bg-white hover:bg-amber-50/80 border border-slate-200 hover:border-amber-300 rounded-lg text-slate-700 flex items-center justify-between">
+            <span class="font-semibold text-slate-900">tastess07@gmail.com (VIP Maestro - Exento de Pago)</span>
+            <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
+          </button>
+          <button onclick="app.quickLogin('demo@catalogoexclusivo.com')" class="w-full py-2 px-3 text-xs bg-white hover:bg-blue-50/80 border border-slate-200 hover:border-blue-300 rounded-lg text-slate-700 flex items-center justify-between">
+            <span class="font-medium text-slate-900">demo@catalogoexclusivo.com (Tienda Multirubro Demo)</span>
+            <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
+          </button>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <script>
-        let productos = [
-            { nombre: "Carro de Juguete", precio: 30, stock: 10, descuento: 50, descripcion: "Carro a escala rápido", imagen: "https://via.placeholder.com/60" }
-        ];
+  <script>
+    const VIP_EMAIL = 'tastess07@gmail.com';
+    const PAYPAL_SUBSCRIPTION_URL = 'https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-5M364683CW0430404NLTVTNQ';
+    const SUBSCRIPTION_PRICE_USD = 30;
 
-        function renderizarTabla() {
-            const tbody = document.getElementById("tabla-productos");
-            tbody.innerHTML = "";
-            productos.forEach((p, index) => {
-                let descPorcentaje = p.descuento || 100;
-                if(descPorcentaje < 50) descPorcentaje = 50;
-                if(descPorcentaje > 100) descPorcentaje = 100;
-                
-                let precioFinal = p.precio * (descPorcentaje / 100);
+    const USERS_KEY = 'ce_users_v2';
+    const STORES_KEY = 'ce_stores_v2';
+    const PRODUCTS_KEY = 'ce_products_v2';
+    const SESSION_KEY = 'ce_session_v2';
 
-                tbody.innerHTML += `
-                    <tr>
-                        <td><img src="${p.imagen}" class="product-img" alt="Imagen"></td>
-                        <td><b>${p.nombre}</b></td>
-                        <td>${p.descripcion}</td>
-                        <td>$${Number(p.precio).toFixed(2)}</td>
-                        <td>${descPorcentaje}%</td>
-                        <td><b>$${precioFinal.toFixed(2)}</b></td>
-                        <td>${p.stock}</td>
-                        <td>
-                            <button class="btn-danger" onclick="eliminarProducto(${index})">Eliminar</button>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
+    function calculateFinalPrice(originalPrice, discountPercent) {
+      const price = Math.max(0, Number(originalPrice) || 0);
+      const discount = Math.min(100, Math.max(0, Number(discountPercent) || 0));
+      if (discount > 0) {
+        return Math.round((price * (1 - discount / 100)) * 100) / 100;
+      }
+      return Math.round(price * 100) / 100;
+    }
 
-        function agregarProducto() {
-            const nombre = document.getElementById("nombre").value;
-            const precio = parseFloat(document.getElementById("precio").value);
-            const stock = parseInt(document.getElementById("stock").value);
-            const descuento = parseFloat(document.getElementById("descuento").value) || 100;
-            const descripcion = document.getElementById("descripcion").value;
-            const imagen = document.getElementById("imagen").value || "https://via.placeholder.com/60";
+    // Generador de enlace de WhatsApp con formato exacto:
+    // "Hola, quiero pedir este producto: [Nombre del producto], Precio: [Precio]"
+    function formatWhatsappUrl(phone, productName, priceText) {
+      const cleanPhone = (phone || '').replace(/[^0-9]/g, '');
+      const message = `Hola, quiero pedir este producto: ${productName}, Precio: ${priceText}`;
+      const encoded = encodeURIComponent(message);
+      if (cleanPhone) {
+        return `https://wa.me/${cleanPhone}?text=${encoded}`;
+      }
+      return `https://api.whatsapp.com/send?text=${encoded}`;
+    }
 
-            if(!nombre || isNaN(precio) || isNaN(stock)) {
-                alert("Por favor completa al menos el nombre, precio y stock.");
-                return;
+    class CatalogApp {
+      constructor() {
+        this.currentUser = null;
+        this.activeStore = null;
+        this.currentView = 'home';
+        this.authMode = 'login';
+        this.init();
+      }
+
+      init() {
+        this.seedInitialData();
+        this.loadSession();
+        this.handleUrlRouting();
+        this.renderNavbar();
+        this.render();
+        window.addEventListener('popstate', () => this.handleUrlRouting());
+      }
+
+      seedInitialData() {
+        if (!localStorage.getItem(USERS_KEY)) {
+          const vipUser = {
+            id: 'usr_vip',
+            email: VIP_EMAIL,
+            subscriptionStatus: 'active',
+            isVipExempt: true,
+            storeId: 'nova-store',
+          };
+          const demoUser = {
+            id: 'usr_demo',
+            email: 'demo@catalogoexclusivo.com',
+            subscriptionStatus: 'active',
+            isVipExempt: false,
+            storeId: 'tienda-demo',
+          };
+          localStorage.setItem(USERS_KEY, JSON.stringify({
+            [VIP_EMAIL.toLowerCase()]: vipUser,
+            ['demo@catalogoexclusivo.com']: demoUser,
+          }));
+
+          const stores = {
+            'nova-store': {
+              id: 'nova-store',
+              ownerEmail: VIP_EMAIL,
+              name: 'Nova Store & Boutique',
+              description: 'Catálogo oficial con lo último en celulares, tecnología, moda de temporada y accesorios premium.',
+              whatsapp: '+52 55 8765 4321', // Teléfono WhatsApp obligatorio
+              currency: '$ USD',
+            },
+            'tienda-demo': {
+              id: 'tienda-demo',
+              ownerEmail: 'demo@catalogoexclusivo.com',
+              name: 'Boutique & Market Express',
+              description: 'Moda urbana, gadgets, café gourmet y artículos para el hogar con pedidos directos a WhatsApp.',
+              whatsapp: '+52 55 1234 5678', // Teléfono WhatsApp obligatorio
+              currency: '$ USD',
             }
+          };
+          localStorage.setItem(STORES_KEY, JSON.stringify(stores));
 
-            productos.push({ nombre, precio, stock, descuento, descripcion, imagen });
-            renderizarTabla();
+          const products = [
+            {
+              id: 'p1',
+              storeId: 'nova-store',
+              name: 'Auriculares Inalámbricos Pro Noise Cancelling',
+              description: 'Cancelación activa de ruido híbrida, 30 horas de batería y sonido estéreo Hi-Res.',
+              imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80',
+              category: 'Tecnología',
+              originalPrice: 120,
+              discountPercent: 15,
+              finalPrice: calculateFinalPrice(120, 15),
+              stock: 14,
+            },
+            {
+              id: 'p2',
+              storeId: 'nova-store',
+              name: 'Smartphone Pro Max 256GB Dual SIM',
+              description: 'Pantalla AMOLED 120Hz, cámara triple de 108MP con ultra zoom nocturno y carga rápida 65W.',
+              imageUrl: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=800&q=80',
+              category: 'Celulares',
+              originalPrice: 899,
+              discountPercent: 10,
+              finalPrice: calculateFinalPrice(899, 10),
+              stock: 5,
+            },
+            {
+              id: 'p3',
+              storeId: 'nova-store',
+              name: 'Chaqueta Denim Vintage Unisex',
+              description: 'Denim de algodón puro lavado con botones reforzados y corte moderno atemporal.',
+              imageUrl: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=800&q=80',
+              category: 'Ropa y Moda',
+              originalPrice: 75,
+              discountPercent: 0,
+              finalPrice: 75,
+              stock: 9,
+            },
+            {
+              id: 'p4',
+              storeId: 'nova-store',
+              name: 'Zapatillas Deportivas Urban Runner',
+              description: 'Amortiguación ergonómica y malla transpirable para uso diario.',
+              imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80',
+              category: 'Calzado',
+              originalPrice: 89,
+              discountPercent: 20,
+              finalPrice: calculateFinalPrice(89, 20),
+              stock: 0, // Agotado
+            },
+            {
+              id: 'p5',
+              storeId: 'nova-store',
+              name: 'Café de Especialidad Grano Entero 500g',
+              description: 'Tostado artesanal con notas aromáticas de caramelo, chocolate y avellana.',
+              imageUrl: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&w=800&q=80',
+              category: 'Comida y Gourmet',
+              originalPrice: 18,
+              discountPercent: 0,
+              finalPrice: 18,
+              stock: 22,
+            },
+            {
+              id: 'p6',
+              storeId: 'nova-store',
+              name: 'Reloj Cronógrafo Elegante en Cuero',
+              description: 'Cristal de zafiro anti-rayaduras y correa de cuero genuino italiano.',
+              imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80',
+              category: 'Accesorios',
+              originalPrice: 140,
+              discountPercent: 25,
+              finalPrice: calculateFinalPrice(140, 25),
+              stock: 4,
+            }
+          ];
+          localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
+        }
+      }
 
-            document.getElementById("nombre").value = "";
-            document.getElementById("precio").value = "";
-            document.getElementById("stock").value = "";
-            document.getElementById("descuento").value = "";
-            document.getElementById("descripcion").value = "";
-            document.getElementById("imagen").value = "";
+      loadSession() {
+        const email = localStorage.getItem(SESSION_KEY);
+        if (email) {
+          const users = JSON.parse(localStorage.getItem(USERS_KEY) || '{}');
+          const user = users[email.toLowerCase()];
+          if (user) {
+            if (user.email.toLowerCase() === VIP_EMAIL.toLowerCase()) {
+              user.subscriptionStatus = 'active';
+              user.isVipExempt = true;
+            }
+            this.currentUser = user;
+          }
+        }
+      }
+
+      handleUrlRouting() {
+        const params = new URLSearchParams(window.location.search);
+        const storeId = params.get('store');
+        if (storeId) {
+          const stores = JSON.parse(localStorage.getItem(STORES_KEY) || '{}');
+          if (stores[storeId]) {
+            this.activeStore = stores[storeId];
+            this.currentView = 'public';
+            return;
+          }
         }
 
-        function eliminarProducto(index) {
-            productos.splice(index, 1);
-            renderizarTabla();
+        if (this.currentUser) {
+          if (this.currentUser.subscriptionStatus === 'pending_payment' && !this.currentUser.isVipExempt) {
+            this.currentView = 'paywall';
+          } else {
+            const stores = JSON.parse(localStorage.getItem(STORES_KEY) || '{}');
+            this.activeStore = stores[this.currentUser.storeId];
+            this.currentView = 'admin';
+          }
+        } else {
+          this.currentView = 'home';
         }
+      }
 
-        renderizarTabla();
-    </script>
+      renderNavbar() {
+        const container = document.getElementById('nav-auth-container');
+        const ownerLinks = document.getElementById('nav-owner-links');
+
+        if (this.currentUser && (this.currentUser.subscriptionStatus === 'active' || this.currentUser.isVipExempt)) {
+          ownerLinks.classList.remove('hidden');
+          ownerLinks.classList.add('flex');
+          const isVip = this.currentUser.email.toLowerCase() === VIP_EMAIL.toLowerCase();
+
+          container.innerHTML = `
+            <div class="flex items-center gap-3">
+              <div class="hidden sm:flex flex-col text-right">
+                <span class="text-xs font-semibold ${isVip ? 'text-amber-600' : 'text-emerald-600'}">
+                  ${isVip ? '⭐ VIP Maestro' : '✓ Suscripción Activa'}
+                </span>
+                <span class="text-xs text-slate-500 truncate max-w-[150px]">${this.currentUser.email}</span>
+              </div>
+              <button onclick="app.logout()" title="Cerrar sesión" class="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg border border-slate-200">
+                <i data-lucide="log-out" class="w-4 h-4"></i>
+              </button>
+            </div>
+          `;
+        } else {
+          ownerLinks.classList.add('hidden');
+          ownerLinks.classList.remove('flex');
+          container.innerHTML = `
+            <button onclick="app.openAuthModal('login')" class="px-3.5 py-1.5 text-xs font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg">
+              Iniciar Sesión
+            </button>
+            <button onclick="app.openAuthModal('register')" class="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm">
+              Crear Mi Tienda ($30/mes)
+            </button>
+          `;
+        }
+        if (window.lucide) lucide.createIcons();
+      }
+
+      render() {
+        const root = document.getElementById('app-root');
+        this.renderNavbar();
+
+        if (this.currentView === 'paywall') {
+          root.innerHTML = this.renderPaywallView();
+        } else if (this.currentView === 'admin' && this.currentUser && this.activeStore) {
+          root.innerHTML = this.renderAdminView();
+        } else if (this.currentView === 'public' && this.activeStore) {
+          root.innerHTML = this.renderPublicView();
+        } else {
+          root.innerHTML = this.renderHomeView();
+        }
+        if (window.lucide) lucide.createIcons();
+      }
+
+      renderHomeView() {
+        return `
+          <div class="bg-slate-50">
+            <section class="relative overflow-hidden pt-12 pb-20 border-b border-slate-200 bg-white">
+              <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                  <div class="space-y-6">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 border border-blue-200 rounded-full text-xs font-semibold text-blue-700">
+                      <i data-lucide="store" class="w-3.5 h-3.5"></i>
+                      <span>SaaS de Catálogos Online para Cualquier Negocio</span>
+                    </div>
+
+                    <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900 leading-tight">
+                      Crea tu catálogo exclusivo para tu tienda y <span class="text-blue-600">vende por WhatsApp</span>
+                    </h1>
+
+                    <p class="text-base text-slate-600 leading-relaxed max-w-xl">
+                      Para ropa, comida, celulares, tecnología o cualquier negocio. Publica tus productos, gestiona stock y recibe pedidos automáticos prellenados en tu WhatsApp.
+                    </p>
+
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
+                      <button onclick="app.openAuthModal('register')" class="px-6 py-3.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+                        <span>Crear Mi Catálogo ($30 USD/mes)</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                      </button>
+                      <button onclick="app.viewDemoStore()" class="px-5 py-3.5 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center justify-center gap-2">
+                        <i data-lucide="store" class="w-4 h-4 text-slate-600"></i>
+                        <span>Ver Tienda Demo</span>
+                      </button>
+                    </div>
+
+                    <div class="pt-4 flex flex-wrap items-center gap-6 text-xs text-slate-500 border-t border-slate-100">
+                      <span class="flex items-center gap-1.5"><i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i> Pagos seguros vía PayPal ($30/mes)</span>
+                      <span class="flex items-center gap-1.5"><i data-lucide="check" class="w-4 h-4 text-blue-600"></i> Compatible con celulares y PC</span>
+                      <span class="flex items-center gap-1.5 text-amber-700 font-medium"><i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i> VIP Maestro: ${VIP_EMAIL}</span>
+                    </div>
+                  </div>
+
+                  <div class="rounded-2xl overflow-hidden shadow-2xl border border-slate-200 bg-slate-900 relative">
+                    <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1200&q=80" alt="Showcase" class="w-full h-[400px] object-cover opacity-90">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent flex flex-col justify-end p-6 text-white">
+                      <span class="px-2.5 py-1 rounded text-[10px] font-bold bg-emerald-600 uppercase w-max mb-1">Pedidos por WhatsApp</span>
+                      <h3 class="text-lg font-bold">Un clic y tus clientes te piden directo al WhatsApp</h3>
+                      <p class="text-xs text-slate-300">Mensaje automático prellenado con nombre del producto y precio.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        `;
+      }
+
+      renderPublicView() {
+        const store = this.activeStore;
+        const products = JSON.parse(localStorage.getItem(PRODUCTS_KEY) || '[]').filter(p => p.storeId === store.id);
+
+        return `
+          <div class="min-h-screen bg-slate-50 pb-20">
+            <section class="bg-white border-b border-slate-200">
+              <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                  <div class="flex items-start gap-4">
+                    <div class="w-16 h-16 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-bold text-3xl shadow-md shrink-0">
+                      <i data-lucide="store" class="w-8 h-8"></i>
+                    </div>
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900">${store.name}</h1>
+                        <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">Catálogo Abierto</span>
+                      </div>
+                      <p class="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl">${store.description}</p>
+                      <p class="text-xs text-slate-500 flex items-center gap-1.5 mt-2 font-mono">
+                        <i data-lucide="phone" class="w-3.5 h-3.5 text-emerald-600"></i>
+                        <span>WhatsApp de pedidos:</span>
+                        <strong class="text-slate-800">${store.whatsapp || 'No configurado'}</strong>
+                      </p>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2 shrink-0">
+                    <button onclick="app.copyStoreLink()" class="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center gap-1.5">
+                      <i data-lucide="share-2" class="w-4 h-4"></i>
+                      <span>Compartir Catálogo</span>
+                    </button>
+                    ${store.whatsapp ? `
+                      <a href="https://wa.me/${store.whatsapp.replace(/[^0-9]/g, '')}" target="_blank" rel="noopener noreferrer" class="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg flex items-center gap-2">
+                        <i data-lucide="message-circle" class="w-4 h-4"></i>
+                        <span>Contactar Tienda</span>
+                      </a>
+                    ` : ''}
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                ${products.map(p => {
+                  const isOutOfStock = p.stock <= 0;
+                  const hasDiscount = (p.discountPercent || 0) > 0;
+                  const priceText = `$${p.finalPrice.toFixed(2)} ${store.currency || '$ USD'}`;
+                  const orderUrl = formatWhatsappUrl(store.whatsapp, p.name, priceText);
+
+                  return `
+                    <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden flex flex-col justify-between hover:shadow-lg transition-all ${isOutOfStock ? 'opacity-80' : ''}">
+                      <div>
+                        <div class="relative aspect-4/3 bg-slate-100 overflow-hidden">
+                          <img src="${p.imageUrl}" alt="${p.name}" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80'">
+                          <div class="absolute top-2.5 left-2.5 flex flex-col gap-1 items-start">
+                            ${isOutOfStock ? `
+                              <span class="px-2.5 py-1 text-xs font-extrabold bg-red-600 text-white rounded-md shadow-md">¡AGOTADO! (0 en stock)</span>
+                            ` : `
+                              <span class="px-2 py-0.5 text-[11px] font-medium bg-emerald-600 text-white rounded-md shadow-sm">${p.stock} en stock</span>
+                            `}
+                            ${hasDiscount ? `
+                              <span class="px-2 py-0.5 text-[11px] font-bold bg-blue-600 text-white rounded-md shadow-sm">-${p.discountPercent}% OFF</span>
+                            ` : ''}
+                          </div>
+                        </div>
+                        <div class="p-5">
+                          <p class="text-[11px] font-semibold uppercase text-slate-400 mb-1">${p.category}</p>
+                          <h3 class="text-base font-bold text-slate-900 line-clamp-1">${p.name}</h3>
+                          <p class="text-xs text-slate-600 line-clamp-2 mt-1.5">${p.description}</p>
+                        </div>
+                      </div>
+
+                      <div class="p-5 pt-0">
+                        <div class="pt-3 border-t border-slate-100 mb-4 flex items-baseline justify-between">
+                          <div>
+                            ${hasDiscount ? `
+                              <span class="text-xs text-slate-400 line-through tabular-nums">$${p.originalPrice.toFixed(2)}</span>
+                            ` : ''}
+                            <span class="text-xl font-extrabold text-slate-900 tabular-nums">$${p.finalPrice.toFixed(2)} <span class="text-xs font-normal text-slate-500">${store.currency || '$ USD'}</span></span>
+                          </div>
+                        </div>
+
+                        ${isOutOfStock ? `
+                          <button disabled class="w-full py-2.5 px-3 bg-slate-100 text-slate-400 font-semibold rounded-xl text-xs flex items-center justify-center gap-2 cursor-not-allowed">
+                            <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                            <span>Agotado temporalmente</span>
+                          </button>
+                        ` : `
+                          <a href="${orderUrl}" target="_blank" rel="noopener noreferrer" class="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm transition-all flex items-center justify-center gap-2">
+                            <i data-lucide="message-circle" class="w-4 h-4"></i>
+                            <span>Pedir por WhatsApp</span>
+                          </a>
+                        `}
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </main>
+          </div>
+        `;
+      }
+
+      renderAdminView() {
+        const store = this.activeStore;
+        const products = JSON.parse(localStorage.getItem(PRODUCTS_KEY) || '[]').filter(p => p.storeId === store.id);
+        const storeUrl = `${window.location.origin}${window.location.pathname}?store=${store.id}`;
+
+        return `
+          <div class="min-h-screen bg-slate-50 pb-16">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-6">
+              <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-6">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-slate-100">
+                  <div>
+                    <h1 class="text-2xl font-bold text-slate-900">${store.name}</h1>
+                    <p class="text-xs text-slate-500">Panel de Administración de tu Tienda</p>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <button onclick="app.viewMyPublicCatalog()" class="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center gap-1.5">
+                      <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                      <span>Ver Catálogo Público</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Campo Obligatorio de Teléfono de WhatsApp -->
+                <div class="p-4 sm:p-5 bg-emerald-50 rounded-xl border border-emerald-200">
+                  <form onsubmit="app.saveWhatsapp(event)" class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <i data-lucide="phone" class="w-4 h-4 text-emerald-700"></i>
+                        <span class="text-xs font-bold uppercase text-emerald-950">Número de Teléfono de WhatsApp (con código de país) *</span>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-200 text-emerald-800">Requerido</span>
+                      </div>
+                      <p class="text-xs text-emerald-800 mt-0.5">Cada botón 'Pedir por WhatsApp' abrirá una conversación a este número con el pedido prellenado.</p>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                      <input type="tel" id="admin-whatsapp-input" required value="${store.whatsapp || ''}" placeholder="Ej. +52 1 55 1234 5678" class="w-60 px-3 py-1.5 text-xs bg-white border border-emerald-300 rounded-lg font-mono focus:ring-2 focus:ring-emerald-500">
+                      <button type="submit" class="px-4 py-1.5 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg">Guardar Teléfono</button>
+                    </div>
+                  </form>
+                </div>
+
+                <!-- Enlace Único de la Tienda -->
+                <div class="p-4 bg-blue-50 rounded-xl border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <span class="text-xs font-bold text-blue-900 uppercase">Enlace Único y Exclusivo de tu Tienda:</span>
+                    <p class="text-xs text-blue-950 font-mono break-all mt-1 bg-white px-3 py-1.5 rounded-lg border border-blue-200">${storeUrl}</p>
+                  </div>
+                  <button onclick="app.copyStoreLink()" class="px-4 py-2 text-xs font-bold bg-white text-blue-700 border border-blue-300 rounded-lg hover:bg-slate-50 shrink-0">
+                    Copiar Enlace
+                  </button>
+                </div>
+
+                <!-- Gestión de Productos -->
+                <div class="pt-4 flex items-center justify-between">
+                  <h2 class="text-lg font-bold text-slate-900">Productos (${products.length})</h2>
+                  <button onclick="app.openNewProductPrompt()" class="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center gap-1.5">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span>Añadir Producto</span>
+                  </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  ${products.map(p => {
+                    const priceText = `$${p.finalPrice.toFixed(2)} ${store.currency || '$ USD'}`;
+                    const whatsappUrl = formatWhatsappUrl(store.whatsapp, p.name, priceText);
+                    return `
+                      <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col justify-between">
+                        <div class="flex gap-3">
+                          <img src="${p.imageUrl}" alt="${p.name}" class="w-14 h-14 rounded-lg object-cover bg-white" onerror="this.src='https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80'">
+                          <div>
+                            <span class="text-[10px] text-slate-500 uppercase font-semibold">${p.category}</span>
+                            <h4 class="text-sm font-bold text-slate-900 line-clamp-1">${p.name}</h4>
+                            <p class="text-xs font-mono font-bold text-slate-800">$${p.finalPrice.toFixed(2)} <span class="font-normal text-slate-500">(Stock: ${p.stock})</span></p>
+                          </div>
+                        </div>
+                        <div class="mt-3 pt-3 border-t border-slate-200 flex items-center justify-between gap-2">
+                          <a href="${whatsappUrl}" target="_blank" class="text-[11px] text-emerald-700 font-semibold flex items-center gap-1 hover:underline">
+                            <i data-lucide="message-circle" class="w-3.5 h-3.5"></i> Probar WhatsApp
+                          </a>
+                          <button onclick="app.deleteProduct('${p.id}')" class="text-xs text-red-600 hover:underline">Eliminar</button>
+                        </div>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      renderPaywallView() {
+        return `
+          <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full p-8 border border-slate-100 text-center space-y-6">
+              <span class="px-3 py-1 rounded-full bg-blue-100 text-blue-700 font-bold text-xs uppercase">Suscripción Requerida</span>
+              <h2 class="text-2xl font-bold text-slate-900">Desbloquea tu Tienda y Catálogo Exclusivo</h2>
+              <p class="text-xs sm:text-sm text-slate-600 max-w-md mx-auto">
+                Para cualquier tienda (ropa, comida, celulares, tecnología). Activa tu membresía de <strong>$30 USD / mes</strong> vía PayPal para recibir pedidos por WhatsApp.
+              </p>
+              <a href="${PAYPAL_SUBSCRIPTION_URL}" target="_blank" rel="noopener noreferrer" class="w-full py-3.5 px-4 bg-[#0070ba] hover:bg-[#005ea6] text-white font-bold rounded-xl shadow-md flex items-center justify-center gap-2 text-sm">
+                <span>Suscribirse con PayPal ($30 USD)</span>
+                <i data-lucide="external-link" class="w-4 h-4"></i>
+              </a>
+              <button onclick="app.confirmPaymentSimulated()" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs">
+                Ya completé el pago, Desbloquear mi Tienda
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
+      openAuthModal(mode = 'login') {
+        this.setAuthMode(mode);
+        document.getElementById('auth-modal').classList.remove('hidden');
+        document.getElementById('auth-modal').classList.add('flex');
+        if (window.lucide) lucide.createIcons();
+      }
+
+      closeAuthModal() {
+        document.getElementById('auth-modal').classList.add('hidden');
+        document.getElementById('auth-modal').classList.remove('flex');
+      }
+
+      setAuthMode(mode) {
+        this.authMode = mode;
+        const regFields = document.getElementById('register-fields');
+        const title = document.getElementById('auth-modal-title');
+        const desc = document.getElementById('auth-modal-desc');
+        const tabLogin = document.getElementById('auth-tab-login');
+        const tabReg = document.getElementById('auth-tab-register');
+        const submitBtn = document.getElementById('auth-submit-btn');
+
+        if (mode === 'register') {
+          regFields.classList.remove('hidden');
+          title.textContent = 'Crea tu catálogo exclusivo';
+          desc.textContent = 'Para ropa, tecnología, comida, celulares o cualquier negocio';
+          tabReg.className = 'flex-1 py-1.5 text-xs font-semibold rounded-md bg-white text-slate-900 shadow-sm';
+          tabLogin.className = 'flex-1 py-1.5 text-xs font-semibold rounded-md text-slate-600 hover:text-slate-900';
+          submitBtn.innerHTML = '<span>Crear Mi Tienda y Continuar</span>';
+        } else {
+          regFields.classList.add('hidden');
+          title.textContent = 'Iniciar Sesión';
+          desc.textContent = 'Accede a tu panel para gestionar tus productos';
+          tabLogin.className = 'flex-1 py-1.5 text-xs font-semibold rounded-md bg-white text-slate-900 shadow-sm';
+          tabReg.className = 'flex-1 py-1.5 text-xs font-semibold rounded-md text-slate-600 hover:text-slate-900';
+          submitBtn.innerHTML = '<span>Entrar al Panel</span>';
+        }
+      }
+
+      handleAuthSubmit(e) {
+        e.preventDefault();
+        const email = document.getElementById('auth-email').value.trim();
+        const password = document.getElementById('auth-password').value;
+        const errorBox = document.getElementById('auth-error-box');
+        errorBox.classList.add('hidden');
+
+        if (this.authMode === 'register') {
+          const storeName = document.getElementById('auth-store-name').value.trim() || 'Mi Tienda Exclusiva';
+          const whatsapp = document.getElementById('auth-whatsapp').value.trim();
+
+          if (!whatsapp || whatsapp.replace(/[^0-9]/g, '').length < 8) {
+            errorBox.textContent = 'Por favor ingresa un número de WhatsApp válido con código de país.';
+            errorBox.classList.remove('hidden');
+            return;
+          }
+
+          const users = JSON.parse(localStorage.getItem(USERS_KEY) || '{}');
+          if (users[email.toLowerCase()]) {
+            errorBox.textContent = 'Este correo ya tiene cuenta. Inicia sesión.';
+            errorBox.classList.remove('hidden');
+            return;
+          }
+
+          const isVip = email.toLowerCase() === VIP_EMAIL.toLowerCase();
+          const storeSlug = 'tienda-' + Date.now().toString().slice(-4);
+          const newUser = {
+            id: 'usr_' + Date.now(),
+            email,
+            password,
+            subscriptionStatus: isVip ? 'active' : 'pending_payment',
+            isVipExempt: isVip,
+            storeId: storeSlug,
+          };
+          users[email.toLowerCase()] = newUser;
+          localStorage.setItem(USERS_KEY, JSON.stringify(users));
+
+          const stores = JSON.parse(localStorage.getItem(STORES_KEY) || '{}');
+          stores[storeSlug] = {
+            id: storeSlug,
+            ownerEmail: email,
+            name: storeName,
+            description: `Catálogo oficial de ${storeName}. Haz tus pedidos directos a nuestro WhatsApp.`,
+            whatsapp,
+            currency: '$ USD',
+          };
+          localStorage.setItem(STORES_KEY, JSON.stringify(stores));
+
+          localStorage.setItem(SESSION_KEY, email);
+          this.currentUser = newUser;
+          this.activeStore = stores[storeSlug];
+          this.closeAuthModal();
+          this.handleUrlRouting();
+          this.render();
+        } else {
+          const users = JSON.parse(localStorage.getItem(USERS_KEY) || '{}');
+          const isVip = email.toLowerCase() === VIP_EMAIL.toLowerCase();
+
+          if (!users[email.toLowerCase()]) {
+            if (isVip) {
+              const vipUser = {
+                id: 'usr_vip',
+                email: VIP_EMAIL,
+                password,
+                subscriptionStatus: 'active',
+                isVipExempt: true,
+                storeId: 'nova-store',
+              };
+              users[email.toLowerCase()] = vipUser;
+              localStorage.setItem(USERS_KEY, JSON.stringify(users));
+            } else {
+              errorBox.textContent = 'No se encontró cuenta con este correo.';
+              errorBox.classList.remove('hidden');
+              return;
+            }
+          }
+
+          const user = users[email.toLowerCase()];
+          if (isVip) {
+            user.subscriptionStatus = 'active';
+            user.isVipExempt = true;
+          }
+
+          localStorage.setItem(SESSION_KEY, email);
+          this.currentUser = user;
+          const stores = JSON.parse(localStorage.getItem(STORES_KEY) || '{}');
+          this.activeStore = stores[user.storeId];
+          this.closeAuthModal();
+          this.handleUrlRouting();
+          this.render();
+        }
+      }
+
+      quickLogin(targetEmail) {
+        document.getElementById('auth-email').value = targetEmail;
+        document.getElementById('auth-password').value = '123456';
+        this.setAuthMode('login');
+        document.getElementById('auth-form').dispatchEvent(new Event('submit'));
+      }
+
+      logout() {
+        localStorage.removeItem(SESSION_KEY);
+        this.currentUser = null;
+        this.activeStore = null;
+        this.currentView = 'home';
+        window.history.pushState(null, '', window.location.pathname);
+        this.render();
+      }
+
+      saveWhatsapp(e) {
+        e.preventDefault();
+        const input = document.getElementById('admin-whatsapp-input');
+        const phone = input.value.trim();
+        if (this.activeStore) {
+          this.activeStore.whatsapp = phone;
+          const stores = JSON.parse(localStorage.getItem(STORES_KEY) || '{}');
+          stores[this.activeStore.id] = this.activeStore;
+          localStorage.setItem(STORES_KEY, JSON.stringify(stores));
+          alert('¡Número de WhatsApp guardado exitosamente!');
+          this.render();
+        }
+      }
+
+      confirmPaymentSimulated() {
+        if (this.currentUser) {
+          const users = JSON.parse(localStorage.getItem(USERS_KEY) || '{}');
+          this.currentUser.subscriptionStatus = 'active';
+          users[this.currentUser.email.toLowerCase()] = this.currentUser;
+          localStorage.setItem(USERS_KEY, JSON.stringify(users));
+          this.currentView = 'admin';
+          this.render();
+        }
+      }
+
+      copyStoreLink() {
+        const url = `${window.location.origin}${window.location.pathname}?store=${this.activeStore.id}`;
+        navigator.clipboard.writeText(url);
+        alert('¡Enlace copiado al portapapeles!');
+      }
+
+      viewMyPublicCatalog() {
+        if (this.currentUser) {
+          window.location.search = `?store=${this.currentUser.storeId}`;
+        }
+      }
+
+      viewDemoStore() {
+        window.location.search = '?store=nova-store';
+      }
+
+      navigateHome() {
+        window.location.search = '';
+      }
+
+      openNewProductPrompt() {
+        const name = prompt('Nombre del producto (ej. Smartphone 128GB, Vestido Elegante, Combo Hamburguesa):');
+        if (!name) return;
+        const price = parseFloat(prompt('Precio original ($):', '50')) || 50;
+        const stock = parseInt(prompt('Stock disponible:', '10'), 10) || 0;
+        const discount = parseInt(prompt('Porcentaje de descuento opcional (0 a 90):', '0'), 10) || 0;
+
+        const products = JSON.parse(localStorage.getItem(PRODUCTS_KEY) || '[]');
+        const newProd = {
+          id: 'p_' + Date.now(),
+          storeId: this.activeStore.id,
+          name,
+          description: 'Producto disponible para pedidos directos.',
+          imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80',
+          category: 'General',
+          originalPrice: price,
+          discountPercent: discount,
+          finalPrice: calculateFinalPrice(price, discount),
+          stock,
+        };
+        products.unshift(newProd);
+        localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
+        this.render();
+      }
+
+      deleteProduct(id) {
+        if (confirm('¿Deseas eliminar este producto de tu catálogo?')) {
+          let products = JSON.parse(localStorage.getItem(PRODUCTS_KEY) || '[]');
+          products = products.filter(p => p.id !== id);
+          localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
+          this.render();
+        }
+      }
+    }
+
+    const app = new CatalogApp();
+  </script>
 </body>
 </html>
