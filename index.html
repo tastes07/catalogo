@@ -1,2 +1,126 @@
 
-Actúa como un desarrollador web experto y créame la estructura completa de un archivo index.html para una tienda web alojada en GitHub. La página debe incluir un catálogo interactivo con una tabla que contenga las siguientes columnas y campos obligatorios: imagen del producto, nombre del producto, descripción detallada, precio original, porcentaje de descuento (con una escala automática del 50% al 100% que calcule el precio final), stock disponible y un botón o sección para añadir y editar productos de forma sencilla y visual. El código debe estar listo en un solo bloque HTML, CSS y JavaScript para copiar, pegar y guardar directamente."
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo Toys</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f9; color: #333; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #2c3e50; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: left; vertical-align: middle; }
+        th { background-color: #3498db; color: white; }
+        img.product-img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; }
+        .form-group { margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; }
+        .form-group input { padding: 8px; flex: 1; min-width: 150px; }
+        button { background-color: #27ae60; color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 4px; }
+        button:hover { background-color: #219653; }
+        .btn-danger { background-color: #e74c3c; }
+        .btn-danger:hover { background-color: #c0392b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Catálogo Toys</h1>
+        
+        <!-- Formulario para agregar productos -->
+        <div style="background: #ecf0f1; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+            <h3>Añadir / Editar Producto</h3>
+            <div class="form-group">
+                <input type="text" id="nombre" placeholder="Nombre del producto">
+                <input type="number" id="precio" placeholder="Precio ($)">
+                <input type="number" id="stock" placeholder="Stock disponible">
+                <input type="number" id="descuento" placeholder="Descuento % (50 al 100)" min="50" max="100">
+                <input type="text" id="descripcion" placeholder="Descripción">
+                <input type="text" id="imagen" placeholder="URL de la imagen">
+            </div>
+            <button onclick="agregarProducto()">Guardar Producto</button>
+        </div>
+
+        <!-- Tabla del Catálogo -->
+        <table>
+            <thead>
+                <tr>
+                    <th>Imagen</th>
+                    <th>Nombre</th>
+                    <th>Descripción</th>
+                    <th>Precio Original</th>
+                    <th>Descuento</th>
+                    <th>Precio Final</th>
+                    <th>Stock</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tabla-productos">
+                <!-- Los productos se cargarán aquí -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        let productos = [
+            { nombre: "Carro de Juguete", precio: 30, stock: 10, descuento: 50, descripcion: "Carro a escala rápido", imagen: "https://via.placeholder.com/60" }
+        ];
+
+        function renderizarTabla() {
+            const tbody = document.getElementById("tabla-productos");
+            tbody.innerHTML = "";
+            productos.forEach((p, index) => {
+                let descPorcentaje = p.descuento || 100;
+                if(descPorcentaje < 50) descPorcentaje = 50;
+                if(descPorcentaje > 100) descPorcentaje = 100;
+                
+                let precioFinal = p.precio * (descPorcentaje / 100);
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td><img src="${p.imagen}" class="product-img" alt="Imagen"></td>
+                        <td><b>${p.nombre}</b></td>
+                        <td>${p.descripcion}</td>
+                        <td>$${Number(p.precio).toFixed(2)}</td>
+                        <td>${descPorcentaje}%</td>
+                        <td><b>$${precioFinal.toFixed(2)}</b></td>
+                        <td>${p.stock}</td>
+                        <td>
+                            <button class="btn-danger" onclick="eliminarProducto(${index})">Eliminar</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function agregarProducto() {
+            const nombre = document.getElementById("nombre").value;
+            const precio = parseFloat(document.getElementById("precio").value);
+            const stock = parseInt(document.getElementById("stock").value);
+            const descuento = parseFloat(document.getElementById("descuento").value) || 100;
+            const descripcion = document.getElementById("descripcion").value;
+            const imagen = document.getElementById("imagen").value || "https://via.placeholder.com/60";
+
+            if(!nombre || isNaN(precio) || isNaN(stock)) {
+                alert("Por favor completa al menos el nombre, precio y stock.");
+                return;
+            }
+
+            productos.push({ nombre, precio, stock, descuento, descripcion, imagen });
+            renderizarTabla();
+
+            document.getElementById("nombre").value = "";
+            document.getElementById("precio").value = "";
+            document.getElementById("stock").value = "";
+            document.getElementById("descuento").value = "";
+            document.getElementById("descripcion").value = "";
+            document.getElementById("imagen").value = "";
+        }
+
+        function eliminarProducto(index) {
+            productos.splice(index, 1);
+            renderizarTabla();
+        }
+
+        renderizarTabla();
+    </script>
+</body>
+</html>
