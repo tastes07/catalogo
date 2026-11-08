@@ -9,28 +9,26 @@
     <meta name="theme-color" content="#4f46e5">
     <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22Cat%C3%A1logo%20Digital%22%2C%22short_name%22%3A%22Cat%C3%A1logo%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23ffffff%22%2C%22theme_color%22%3A%22%234f46e5%22%2C%22icons%22%3A%5B%5D%7D">
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
 
-    <!-- CONTENEDOR PRINCIPAL DE LA APLICACIÓN -->
+    <!-- CONTENEDOR PRINCIPAL -->
     <div id="app" class="flex-grow flex flex-col"></div>
 
-    <!-- MODAL DE DETALLES DE PRODUCTO (VISTA PÚBLICA) -->
-    <div id="product-modal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-lg w-full p-6 relative shadow-2xl">
-            <button onclick="closeProductModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 text-2xl font-bold">×</button>
+    <!-- MODAL DE DETALLES DE PRODUCTO -->
+    <div id="product-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 relative shadow-2xl animate-in fade-in zoom-in duration-200">
+            <button onclick="closeProductModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 text-2xl font-bold bg-slate-100 hover:bg-slate-200 w-10 h-10 rounded-full flex items-center justify-center transition">×</button>
             <div id="modal-content"></div>
         </div>
     </div>
 
-    <!-- SCRIPT CENTRAL DE FUNCIONALIDAD -->
+    <!-- SCRIPT DE LÓGICA Y FUNCIONALIDAD MULTI-TIENDA -->
     <script>
-        // CONFIGURACIÓN DE CORREO SUPREMO Y PAYPAL
         const ADMIN_VIP_EMAIL = "tastess07@gmail.com";
         const PAYPAL_SUBSCRIPTION_LINK = "https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-5M364683CW0430404NLTVTNQ";
 
-        // GESTIÓN DE BASE DE DATOS LOCAL
         function getDB() {
-            return JSON.parse(localStorage.getItem('saas_catalog_db')) || { stores: [], products: [], subscriptions: {} };
+            return JSON.parse(localStorage.getItem('saas_catalog_db')) || { stores: [], products: [], users: {}, subscriptions: {} };
         }
 
         function saveDB(db) {
@@ -45,7 +43,6 @@
             localStorage.setItem('saas_current_user', JSON.stringify(user));
         }
 
-        // ENRUTADOR PRINCIPAL
         function router() {
             const params = new URLSearchParams(window.location.search);
             const storeParam = params.get('store');
@@ -58,61 +55,73 @@
             }
         }
 
-        // --- 1. VISTA PÚBLICA DEL CATÁLOGO (TIPO SHOPIFY / FRAME) ---
+        // --- 1. VISTA PÚBLICA DEL CATÁLOGO (LO QUE VEN LOS CLIENTES DEL DUEÑO DE LA TIENDA) ---
         function renderPublicStore(storeName, container) {
             const db = getDB();
-            const store = db.stores.find(s => s.name.toLowerCase() === storeName.toLowerCase() || s.slug === storeName);
+            const cleanSearchName = decodeURIComponent(storeName).trim().toLowerCase();
+            
+            // Buscar tienda de forma flexible
+            const store = db.stores.find(s => 
+                (s.slug && s.slug.toLowerCase() === cleanSearchName) || 
+                (s.name && s.name.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanSearchName.replace(/[^a-z0-9]/g, '')) ||
+                (s.name && s.name.toLowerCase() === cleanSearchName)
+            );
 
             if (!store) {
                 container.innerHTML = `
                     <div class="flex-grow flex items-center justify-center p-6 text-center">
-                        <div class="bg-white p-8 rounded-2xl shadow-md max-w-md w-full border border-slate-200">
-                            <h2 class="text-2xl font-bold text-red-600 mb-2">Tienda no encontrada</h2>
-                            <p class="text-slate-600 mb-6">El catálogo "<strong>${storeName}</strong>" no existe o fue eliminado.</p>
-                            <a href="?" class="bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-medium hover:bg-indigo-700 transition inline-block">Crear mi propia tienda</a>
+                        <div class="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full border border-slate-100">
+                            <div class="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">⚠️</div>
+                            <h2 class="text-2xl font-black text-slate-900 mb-2">Tienda no encontrada</h2>
+                            <p class="text-slate-500 text-sm mb-6">El catálogo "<strong>${storeName}</strong>" no existe o la dirección es incorrecta.</p>
+                            <a href="?" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-semibold text-sm transition shadow-lg shadow-indigo-600/20 inline-block">Crear mi propia tienda</a>
                         </div>
                     </div>
                 `;
                 return;
             }
 
+            // Filtrar únicamente los productos que pertenecen a ESTA tienda específica
             const products = db.products.filter(p => p.storeId === store.id);
+            const themeColor = store.themeColor || 'indigo';
+            const headerBg = themeColor === 'dark' ? 'bg-slate-900 text-white' : themeColor === 'emerald' ? 'bg-gradient-to-r from-emerald-800 to-teal-900 text-white' : themeColor === 'rose' ? 'bg-gradient-to-r from-rose-800 to-pink-900 text-white' : 'bg-gradient-to-r from-indigo-900 to-slate-900 text-white';
 
             container.innerHTML = `
-                <!-- Cabecera de la Tienda -->
-                <header class="bg-white border-b border-slate-200 py-6 px-4 shadow-sm">
-                    <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-                        <div>
-                            <h1 class="text-3xl font-extrabold text-slate-900">${store.name}</h1>
-                            <p class="text-slate-600 mt-1">${store.description || 'Catálogo digital oficial'}</p>
+                <!-- Cabecera del Catálogo del Dueño -->
+                <header class="${headerBg} py-12 px-6 shadow-lg">
+                    <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+                        <div class="text-center md:text-left">
+                            <span class="bg-white/10 text-white text-[11px] px-3 py-1 rounded-full font-bold uppercase tracking-wider backdrop-blur-md">Catálogo Oficial</span>
+                            <h1 class="text-4xl md:text-5xl font-black tracking-tight mt-2">${store.name}</h1>
+                            <p class="text-slate-200 text-sm md:text-base mt-2 max-w-xl leading-relaxed">${store.description || 'Explora nuestros productos disponibles'}</p>
                         </div>
-                        <div class="w-full md:w-72">
-                            <input type="text" id="search-input" oninput="filterProducts('${store.id}')" placeholder="Buscar productos..." class="w-full px-4 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                        <div class="w-full md:w-80">
+                            <input type="text" id="search-input" oninput="filterProducts('${store.id}')" placeholder="🔍 Buscar productos..." class="w-full px-4 py-3.5 rounded-2xl bg-white/10 border border-white/20 text-white placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-white text-sm backdrop-blur-md shadow-inner">
                         </div>
                     </div>
                 </header>
 
-                <!-- Cuadrícula de Productos -->
-                <main class="flex-grow max-w-5xl w-full mx-auto p-4 md:p-6">
+                <!-- Cuadrícula de Productos Actualizados en Tiempo Real -->
+                <main class="flex-grow max-w-5xl w-full mx-auto p-4 md:p-8">
                     <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                        ${products.length === 0 ? '<p class="col-span-full text-center text-slate-500 py-12">Esta tienda aún no tiene productos agregados.</p>' : ''}
+                        ${products.length === 0 ? '<div class="col-span-full text-center py-20"><p class="text-slate-400 text-lg font-medium">Esta tienda aún no tiene productos publicados.</p></div>' : ''}
                         ${products.map(p => `
-                            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col">
-                                <div class="h-48 bg-slate-100 overflow-hidden cursor-pointer relative" onclick="openProductModal('${p.id}')">
-                                    <img src="${p.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500'}" alt="${p.name}" class="w-full h-full object-cover">
-                                    ${p.discount ? `<span class="absolute top-3 right-3 bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">${p.discount}% OFF</span>` : ''}
+                            <div class="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group">
+                                <div class="h-56 bg-slate-100 overflow-hidden cursor-pointer relative" onclick="openProductModal('${p.id}')">
+                                    <img src="${p.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500'}" alt="${p.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                                    ${p.discount ? `<span class="absolute top-3 right-3 bg-rose-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">${p.discount}% OFF</span>` : ''}
                                 </div>
-                                <div class="p-4 flex flex-col flex-grow">
-                                    <h3 class="font-bold text-lg text-slate-900 cursor-pointer hover:text-indigo-600" onclick="openProductModal('${p.id}')">${p.name}</h3>
-                                    <p class="text-slate-600 text-sm mt-1 line-clamp-2 flex-grow">${p.description || 'Sin descripción'}</p>
-                                    <div class="mt-4 flex items-center justify-between">
+                                <div class="p-5 flex flex-col flex-grow">
+                                    <h3 class="font-bold text-lg text-slate-900 cursor-pointer hover:text-indigo-600 transition" onclick="openProductModal('${p.id}')">${p.name}</h3>
+                                    <p class="text-slate-500 text-sm mt-1.5 line-clamp-2 flex-grow leading-relaxed">${p.description || 'Sin descripción detallada.'}</p>
+                                    <div class="mt-4 flex items-baseline justify-between">
                                         <div>
-                                            <span class="text-xl font-extrabold text-indigo-600">RD$ ${p.price}</span>
-                                            ${p.stock ? `<span class="block text-xs text-slate-500">Stock: ${p.stock} unidades</span>` : ''}
+                                            <span class="text-2xl font-black text-indigo-600">RD$ ${p.price}</span>
+                                            ${p.stock ? `<span class="block text-xs text-slate-400 mt-0.5">Stock disponible: ${p.stock}</span>` : ''}
                                         </div>
                                     </div>
-                                    <a href="https://wa.me/${store.whatsapp}?text=Hola,%20estoy%20interesado%20en%20el%20producto:%20*${encodeURIComponent(p.name)}*%20(Precio:%20RD$%20${p.price})" target="_blank" class="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white text-center py-2.5 rounded-xl font-medium text-sm transition flex items-center justify-center gap-2">
-                                        Pedir por WhatsApp
+                                    <a href="https://wa.me/${store.whatsapp}?text=Hola,%20estoy%20interesado%20en%20el%20producto:%20*${encodeURIComponent(p.name)}*%20(Precio:%20RD$%20${p.price})" target="_blank" class="mt-5 w-full bg-emerald-600 hover:bg-emerald-700 text-white text-center py-3.5 rounded-2xl font-bold text-sm transition shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2">
+                                        💬 Pedir por WhatsApp
                                     </a>
                                 </div>
                             </div>
@@ -120,90 +129,103 @@
                     </div>
                 </main>
 
-                <!-- Pie limpio de la tienda -->
                 <footer class="bg-white border-t border-slate-200 py-6 px-4 text-center text-xs text-slate-400 mt-auto">
-                    Catálogo impulsado por SaaS Tiendas Online. Sin comisiones por venta.
+                    Catálogo digital impulsado por SaaS Tiendas Online. Sin comisiones por venta.
                 </footer>
             `;
         }
 
-        // --- 2. AUTENTICACIÓN Y PANEL DE CONTROL DE SUSCRIPCIÓN ---
+        // --- 2. AUTENTICACIÓN Y REGISTRO DE CADA DUEÑO DE TIENDA ---
         function renderAuthOrDashboard(container) {
             const user = getSession();
             const db = getDB();
 
             if (!user) {
-                // Pantalla de Inicio de Sesión / Registro inicial
                 container.innerHTML = `
-                    <!-- Nota de capacidad y aviso de PayPal para administradores -->
-                    <div class="bg-indigo-600 text-white px-4 py-3 text-xs md:text-sm relative shadow-md">
+                    <div class="bg-indigo-600 text-white px-4 py-3 text-xs md:text-sm shadow-md">
                         <div class="max-w-4xl mx-auto flex justify-between items-start gap-4 pr-8">
                             <div>
-                                <p class="font-semibold mb-1">📢 Aviso importante del sistema:</p>
-                                <p>Esta app no está diseñada para millones de usuarios, sino para una cantidad cierta. En el momento en el que la app no te deje acceder o iniciar sesión es porque se ha saturado. Si tienes alguna duda, confusión o problemas, siéntete libre de escribirme a <strong class="underline">${ADMIN_VIP_EMAIL}</strong> mediante el buzón de sugerencias.</p>
-                                <p class="mt-2 font-semibold">💳 Pagos exclusivos por PayPal:</p>
-                                <p>Lamentablemente la plataforma solo acepta pagos y suscripciones a través de PayPal ($30/mes). Necesitas una cuenta de PayPal con tarjeta de crédito o débito asociada para suscribirte.</p>
+                                <p class="font-semibold mb-1">📢 Aviso del sistema:</p>
+                                <p>Plataforma de catálogos digitales. Soporte técnico en <strong class="underline">${ADMIN_VIP_EMAIL}</strong>.</p>
+                                <p class="mt-1">💳 <strong>Pagos por PayPal:</strong> La creación de tienda requiere suscripción mensual de $30 USD vía PayPal.</p>
                             </div>
-                            <button onclick="this.parentElement.parentElement.style.display='none'" class="text-white font-bold text-lg bg-indigo-700 hover:bg-indigo-800 px-2.5 py-1 rounded-full transition">×</button>
+                            <button onclick="this.parentElement.parentElement.style.display='none'" class="text-white font-bold text-lg bg-indigo-700 hover:bg-indigo-800 px-2.5 py-1 rounded-xl">×</button>
                         </div>
                     </div>
 
                     <div class="flex-grow flex items-center justify-center p-4">
-                        <div class="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full border border-slate-200">
+                        <div class="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full border border-slate-100">
                             <div class="text-center mb-6">
-                                <h2 class="text-2xl font-extrabold text-slate-900">Acceso a Tu Tienda</h2>
-                                <p class="text-sm text-slate-600 mt-1">Inicia sesión con tu correo para administrar tu catálogo</p>
+                                <h2 class="text-3xl font-black text-slate-900">SaaS Catálogos</h2>
+                                <p class="text-sm text-slate-500 mt-1">Crea tu tienda online profesional en segundos</p>
                             </div>
-                            <form onsubmit="handleAuth(event)" class="space-y-4">
+
+                            <div class="flex bg-slate-100 p-1.5 rounded-2xl mb-6">
+                                <button onclick="switchTab('login')" id="tab-login" class="flex-1 py-2 text-xs font-bold rounded-xl bg-white text-indigo-600 shadow-sm transition">Iniciar Sesión</button>
+                                <button onclick="switchTab('register')" id="tab-register" class="flex-1 py-2 text-xs font-bold rounded-xl text-slate-500 transition">Crear Cuenta</button>
+                            </div>
+
+                            <div id="auth-error" class="hidden mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-600 text-xs rounded-xl text-center font-medium"></div>
+
+                            <form id="form-login" onsubmit="handleLogin(event)" class="space-y-4">
                                 <div>
                                     <label class="block text-xs font-semibold text-slate-600 mb-1">Correo Electrónico</label>
-                                    <input type="email" id="auth-email" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500">
+                                    <input type="email" id="login-email" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500">
                                 </div>
-                                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-xl text-sm transition shadow-sm">Continuar al Panel</button>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Contraseña</label>
+                                    <input type="password" id="login-pass" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3.5 rounded-2xl text-sm transition shadow-lg shadow-indigo-600/20">Entrar a mi Tienda</button>
+                            </form>
+
+                            <form id="form-register" onsubmit="handleRegister(event)" class="space-y-4 hidden">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Correo Electrónico</label>
+                                    <input type="email" id="reg-email" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Crea una Contraseña</label>
+                                    <input type="password" id="reg-pass" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre de tu Tienda</label>
+                                    <input type="text" id="reg-store-name" placeholder="Ej: Moda Express" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">WhatsApp de tu Tienda</label>
+                                    <input type="text" id="reg-whatsapp" placeholder="Ej: 18095555555" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3.5 rounded-2xl text-sm transition shadow-lg shadow-indigo-600/20">Registrarme y Continuar</button>
                             </form>
                         </div>
                     </div>
-
-                    <!-- Buzón de sugerencias general -->
-                    <footer class="bg-white border-t border-slate-200 py-8 px-4">
-                        <div class="max-w-xl mx-auto text-center">
-                            <h3 class="font-bold text-lg text-slate-800 mb-2">Buzón de Sugerencias y Soporte</h3>
-                            <p class="text-sm text-slate-600 mb-4">¿Tienes dudas o necesitas ayuda? Escríbenos directamente.</p>
-                            <form onsubmit="sendAdminSuggestion(event)" class="space-y-3">
-                                <input type="text" id="sug-name" placeholder="Tu nombre" required class="w-full px-4 py-2 border border-slate-300 rounded-xl text-sm">
-                                <textarea id="sug-msg" placeholder="Escribe tu mensaje aquí..." required class="w-full px-4 py-2 border border-slate-300 rounded-xl text-sm h-24"></textarea>
-                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 py-2 rounded-xl text-sm transition">Enviar al correo del admin</button>
-                            </form>
-                        </div>
-                    </footer>
                 `;
             } else {
-                // Verificar si el usuario es VIP o pagó su suscripción en PayPal
                 const isVip = user.email.toLowerCase() === ADMIN_VIP_EMAIL.toLowerCase();
                 const hasPaid = db.subscriptions[user.email] === true;
 
                 if (!isVip && !hasPaid) {
-                    // Pantalla de pago obligatorio por PayPal ($30/mes)
                     container.innerHTML = `
                         <div class="flex-grow flex items-center justify-center p-4">
-                            <div class="bg-white p-8 rounded-2xl shadow-xl max-w-lg w-full border border-indigo-100 text-center">
-                                <span class="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full font-bold uppercase">Suscripción Requerida ($30/mes)</span>
-                                <h2 class="text-2xl font-extrabold text-slate-900 mt-4">Activa tu Cuenta</h2>
-                                <p class="text-sm text-slate-600 mt-2 mb-6">Para crear y mantener tu tienda online activa con enlace único y fotos ilimitadas, debes completar tu suscripción mensual de <strong>$30 USD</strong> a través de PayPal.</p>
+                            <div class="bg-white p-8 rounded-3xl shadow-xl max-w-lg w-full border border-indigo-100 text-center">
+                                <span class="bg-amber-100 text-amber-800 text-xs px-3 py-1.5 rounded-full font-bold uppercase">Suscripción Requerida ($30/mes)</span>
+                                <h2 class="text-3xl font-black text-slate-900 mt-4">Activa Tu Tienda</h2>
+                                <p class="text-sm text-slate-600 mt-2 mb-6">Para mantener tu enlace único activo con gestión de productos y fotos ilimitadas, completa tu suscripción mensual de <strong>$30 USD</strong> vía PayPal.</p>
                                 
-                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6 text-left text-xs text-slate-600 space-y-2">
-                                    <p>📌 <strong>Nota:</strong> Solo aceptamos pagos seguros mediante PayPal (tarjeta de crédito o débito conectada a tu cuenta de PayPal).</p>
-                                    <p>✉️ Usuario actual: <strong>${user.email}</strong></p>
+                                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-6 text-left text-xs text-slate-600 space-y-1.5">
+                                    <p>📌 Cuenta: <strong>${user.email}</strong></p>
+                                    <p>💳 Pagos procesados de forma segura por PayPal.</p>
                                 </div>
 
                                 <div class="space-y-3">
-                                    <a href="${PAYPAL_SUBSCRIPTION_LINK}" target="_blank" onclick="simulatePayPalSuccess()" class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-sm transition shadow-md">
+                                    <a href="${PAYPAL_SUBSCRIPTION_LINK}" target="_blank" onclick="simulatePayPalSuccess()" class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-2xl text-sm transition shadow-md shadow-blue-600/20">
                                         Suscribirse con PayPal ($30/mes)
                                     </a>
-                                    <button onclick="confirmPaymentManual()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-xl text-sm transition">
-                                        Ya realicé mi pago en PayPal, entrar a mi tienda
+                                    <button onclick="confirmPaymentManual()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3.5 rounded-2xl text-sm transition">
+                                        Ya pagué en PayPal, entrar a mi panel
                                     </button>
-                                    <button onclick="logout()" class="w-full text-slate-500 hover:text-slate-800 text-sm py-2">Cerrar sesión</button>
+                                    <button onclick="logout()" class="w-full text-slate-400 hover:text-slate-700 text-xs py-2">Cerrar sesión</button>
                                 </div>
                             </div>
                         </div>
@@ -214,102 +236,144 @@
             }
         }
 
-        // --- 3. PANEL DE GESTIÓN DE TIENDA Y PRODUCTOS ---
+        // --- 3. PANEL DE CADA CLIENTE PARA GESTIONAR SU PROPIO CATÁLOGO ---
         function renderDashboardContent(container, user) {
             const db = getDB();
-            let store = db.stores.find(s => s.ownerEmail === user.email);
+            let store = db.stores.find(s => s.ownerEmail.toLowerCase() === user.email.toLowerCase());
 
             container.innerHTML = `
-                <header class="bg-white border-b border-slate-200 py-4 px-6 shadow-sm flex justify-between items-center">
+                <header class="bg-white border-b border-slate-200 py-4 px-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3">
                     <div>
-                        <h1 class="font-bold text-lg text-slate-800">Panel de Administración</h1>
-                        <p class="text-xs text-slate-500">${user.email} ${user.email === ADMIN_VIP_EMAIL ? '(Admin VIP)' : '(Suscripción Activa)'}</p>
+                        <h1 class="font-bold text-lg text-slate-800">Panel de Administración de Tienda</h1>
+                        <p class="text-xs text-slate-400">${user.email}</p>
                     </div>
-                    <button onclick="logout()" class="text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-lg text-sm font-medium transition">Cerrar Sesión</button>
+                    <div class="flex items-center gap-3">
+                        <button onclick="installPWA()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-4 py-2 rounded-xl text-xs transition flex items-center gap-1.5">
+                            📲 Descargar App
+                        </button>
+                        <button onclick="logout()" class="text-rose-600 hover:bg-rose-50 px-3 py-2 rounded-xl text-xs font-semibold transition">Cerrar Sesión</button>
+                    </div>
                 </header>
 
-                <main class="flex-grow max-w-4xl w-full mx-auto p-4 md:p-6 space-y-6">
+                <main class="flex-grow max-w-4xl w-full mx-auto p-4 md:p-8 space-y-6">
                     ${!store ? `
-                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                            <h2 class="text-xl font-bold mb-2">Paso Final: Configura los datos de tu tienda</h2>
-                            <p class="text-sm text-slate-600 mb-6">Establece el nombre y número de contacto para que tus clientes te hagan pedidos por WhatsApp.</p>
+                        <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+                            <h2 class="text-2xl font-bold mb-2">Configura tu Tienda</h2>
+                            <p class="text-sm text-slate-500 mb-6">Establece el nombre y la descripción para tu enlace público.</p>
                             <form onsubmit="saveStoreConfig(event)" class="space-y-4">
                                 <div>
                                     <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre de la Tienda</label>
-                                    <input type="text" id="store-name" required class="w-full px-4 py-2 border border-slate-300 rounded-xl text-sm">
+                                    <input type="text" id="store-name" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Descripción corta</label>
-                                    <input type="text" id="store-desc" class="w-full px-4 py-2 border border-slate-300 rounded-xl text-sm">
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Descripción del catálogo</label>
+                                    <input type="text" id="store-desc" class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Número de WhatsApp (con código de país, ej: 18095555555)</label>
-                                    <input type="text" id="store-whatsapp" required class="w-full px-4 py-2 border border-slate-300 rounded-xl text-sm">
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">WhatsApp</label>
+                                    <input type="text" id="store-whatsapp" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
                                 </div>
-                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 py-2.5 rounded-xl text-sm transition">Crear mi Tienda y Ver Enlace</button>
+                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-2xl text-sm transition shadow-md">Crear Tienda</button>
                             </form>
                         </div>
                     ` : `
-                        <div class="bg-indigo-50 border border-indigo-100 p-6 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div class="bg-gradient-to-r from-indigo-50 to-slate-50 border border-indigo-100 p-6 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                             <div>
-                                <span class="bg-indigo-600 text-white text-xs px-2.5 py-1 rounded-full font-semibold uppercase">Tienda Publicada</span>
-                                <h2 class="text-2xl font-bold text-slate-900 mt-2">${store.name}</h2>
-                                <p class="text-sm text-slate-600 mt-1">Este es el enlace único de tu tienda (compártelo con tus clientes):</p>
+                                <span class="bg-indigo-600 text-white text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-wider">Tu Tienda Activa</span>
+                                <h2 class="text-2xl font-black text-slate-900 mt-2">${store.name}</h2>
+                                <p class="text-xs text-slate-500 mt-1">Este es tu enlace único para compartir con tus clientes:</p>
                                 <a href="?store=${encodeURIComponent(store.slug || store.name)}" target="_blank" class="text-indigo-600 font-bold text-sm underline break-all mt-1 inline-block">${window.location.origin}${window.location.pathname}?store=${encodeURIComponent(store.slug || store.name)}</a>
                             </div>
+                            <button onclick="toggleStoreSettings()" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-4 py-2.5 rounded-2xl text-xs font-semibold transition shadow-sm">⚙️ Ajustes y Color</button>
                         </div>
 
-                        <!-- Formulario de Añadir Producto -->
-                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                            <h3 class="font-bold text-lg mb-4">Añadir Nuevo Producto al Catálogo</h3>
-                            <form onsubmit="addProduct(event, '${store.id}')" class="space-y-4">
+                        <!-- Formulario de Ajustes y Color de la Tienda del Cliente -->
+                        <div id="store-settings-box" class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hidden">
+                            <h3 class="font-bold text-lg mb-4">Modificar Apariencia y Datos de tu Tienda</h3>
+                            <form onsubmit="updateStoreConfig(event, '${store.id}')" class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre de la Tienda</label>
+                                    <input type="text" id="edit-store-name" value="${store.name}" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Descripción</label>
+                                    <input type="text" id="edit-store-desc" value="${store.description || ''}" class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">WhatsApp para Pedidos</label>
+                                    <input type="text" id="edit-store-whatsapp" value="${store.whatsapp}" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Color del Catálogo</label>
+                                    <select id="edit-store-theme" class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
+                                        <option value="indigo" ${store.themeColor === 'indigo' ? 'selected' : ''}>Azul / Índigo Profesional</option>
+                                        <option value="dark" ${store.themeColor === 'dark' ? 'selected' : ''}>Negro Minimalista</option>
+                                        <option value="emerald" ${store.themeColor === 'emerald' ? 'selected' : ''}>Verde Esmeralda</option>
+                                        <option value="rose" ${store.themeColor === 'rose' ? 'selected' : ''}>Rosa / Fucsia Moderno</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2.5 rounded-2xl text-sm transition">Guardar Cambios</button>
+                            </form>
+                        </div>
+
+                        <!-- Formulario de Añadir / Editar Producto (EXCLUSIVO DE SU TIENDA) -->
+                        <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+                            <h3 id="form-product-title" class="font-bold text-lg mb-4">Añadir Nuevo Producto a Tu Catálogo</h3>
+                            <form onsubmit="saveProduct(event, '${store.id}')" class="space-y-4">
+                                <input type="hidden" id="edit-prod-id" value="">
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre del Producto</label>
-                                        <input type="text" id="prod-name" required class="w-full px-4 py-2 border border-slate-300 rounded-xl text-sm">
+                                        <input type="text" id="prod-name" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
                                     </div>
                                     <div>
                                         <label class="block text-xs font-semibold text-slate-600 mb-1">Precio (RD$)</label>
-                                        <input type="number" id="prod-price" required class="w-full px-4 py-2 border border-slate-300 rounded-xl text-sm">
+                                        <input type="number" id="prod-price" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div>
                                         <label class="block text-xs font-semibold text-slate-600 mb-1">Stock disponible</label>
-                                        <input type="number" id="prod-stock" class="w-full px-4 py-2 border border-slate-300 rounded-xl text-sm">
+                                        <input type="number" id="prod-stock" class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
                                     </div>
                                     <div>
                                         <label class="block text-xs font-semibold text-slate-600 mb-1">Descuento % (Opcional)</label>
-                                        <input type="number" id="prod-discount" placeholder="Ej: 15" class="w-full px-4 py-2 border border-slate-300 rounded-xl text-sm">
+                                        <input type="number" id="prod-discount" placeholder="Ej: 10" class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
                                     </div>
                                     <div>
                                         <label class="block text-xs font-semibold text-slate-600 mb-1">Foto del producto</label>
-                                        <input type="file" id="prod-file" accept="image/*" class="w-full text-xs text-slate-500 file:py-2 file:px-3 file:rounded-xl file:border-0 file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                                        <input type="file" id="prod-file" accept="image/*" class="w-full text-xs text-slate-500 file:py-2 file:px-3 file:rounded-xl file:border-0 file:font-semibold file:bg-indigo-50 file:text-indigo-700">
                                     </div>
                                 </div>
                                 <div>
                                     <label class="block text-xs font-semibold text-slate-600 mb-1">Descripción detallada</label>
-                                    <textarea id="prod-desc" class="w-full px-4 py-2 border border-slate-300 rounded-xl text-sm h-20"></textarea>
+                                    <textarea id="prod-desc" class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm h-20"></textarea>
                                 </div>
-                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 py-2.5 rounded-xl text-sm transition shadow-sm">Agregar Producto al Catálogo</button>
+                                <div class="flex gap-3">
+                                    <button type="submit" id="btn-submit-prod" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-2xl text-sm transition shadow-md shadow-indigo-600/20">Guardar Producto</button>
+                                    <button type="button" id="btn-cancel-edit" onclick="resetProductForm()" class="hidden bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-6 py-3 rounded-2xl text-sm transition">Cancelar</button>
+                                </div>
                             </form>
                         </div>
 
-                        <!-- Lista de Productos en el Panel -->
-                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                            <h3 class="font-bold text-lg mb-4">Tus Productos Actuales</h3>
+                        <!-- Lista de Sus Productos (Con opción de Editar o Eliminar) -->
+                        <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+                            <h3 class="font-bold text-lg mb-4">Productos en Tu Catálogo</h3>
                             <div class="space-y-3">
-                                ${db.products.filter(p => p.storeId === store.id).length === 0 ? '<p class="text-sm text-slate-500">Aún no hay productos en tu catálogo.</p>' : ''}
+                                ${db.products.filter(p => p.storeId === store.id).length === 0 ? '<p class="text-sm text-slate-400">Aún no hay productos en tu catálogo.</p>' : ''}
                                 ${db.products.filter(p => p.storeId === store.id).map(p => `
-                                    <div class="flex items-center justify-between p-3 border border-slate-100 rounded-xl bg-slate-50">
-                                        <div class="flex items-center gap-3">
-                                            <img src="${p.image}" class="w-12 h-12 object-cover rounded-lg">
+                                    <div class="flex items-center justify-between p-4 border border-slate-100 rounded-2xl bg-slate-50/50 hover:bg-slate-50 transition">
+                                        <div class="flex items-center gap-4">
+                                            <img src="${p.image}" class="w-14 h-14 object-cover rounded-xl shadow-sm">
                                             <div>
                                                 <h4 class="font-bold text-sm text-slate-900">${p.name}</h4>
-                                                <p class="text-xs text-indigo-600 font-semibold">RD$ ${p.price} ${p.stock ? `• Stock: ${p.stock}` : ''}</p>
+                                                <p class="text-xs text-indigo-600 font-bold mt-0.5">RD$ ${p.price} ${p.stock ? `• Stock: ${p.stock}` : ''}</p>
                                             </div>
                                         </div>
-                                        <button onclick="deleteProduct('${p.id}')" class="text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg text-sm font-medium transition">Eliminar</button>
+                                        <div class="flex items-center gap-2">
+                                            <button onclick="editProductPrompt('${p.id}')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-2 rounded-xl text-xs font-semibold transition">Editar</button>
+                                            <button onclick="deleteProduct('${p.id}')" class="bg-rose-50 hover:bg-rose-100 text-rose-600 px-3 py-2 rounded-xl text-xs font-semibold transition">Eliminar</button>
+                                        </div>
                                     </div>
                                 `).join('')}
                             </div>
@@ -319,12 +383,82 @@
             `;
         }
 
-        // --- FUNCIONES DE ACCIÓN ---
-        function handleAuth(event) {
+        // --- FUNCIONES DEL SISTEMA ---
+        function switchTab(tab) {
+            const loginTab = document.getElementById('tab-login');
+            const regTab = document.getElementById('tab-register');
+            const loginForm = document.getElementById('form-login');
+            const regForm = document.getElementById('form-register');
+
+            if (tab === 'login') {
+                loginTab.className = "flex-1 py-2 text-xs font-bold rounded-xl bg-white text-indigo-600 shadow-sm transition";
+                regTab.className = "flex-1 py-2 text-xs font-bold rounded-xl text-slate-500 transition";
+                loginForm.classList.remove('hidden');
+                regForm.classList.add('hidden');
+            } else {
+                regTab.className = "flex-1 py-2 text-xs font-bold rounded-xl bg-white text-indigo-600 shadow-sm transition";
+                loginTab.className = "flex-1 py-2 text-xs font-bold rounded-xl text-slate-500 transition";
+                regForm.classList.remove('hidden');
+                loginForm.classList.add('hidden');
+            }
+        }
+
+        function handleLogin(event) {
             event.preventDefault();
-            const email = document.getElementById('auth-email').value.trim().toLowerCase();
+            const email = document.getElementById('login-email').value.trim().toLowerCase();
+            const pass = document.getElementById('login-pass').value;
+            const db = getDB();
+
+            if (email === ADMIN_VIP_EMAIL) {
+                setSession({ email });
+                router();
+                return;
+            }
+
+            if (db.users[email] && db.users[email] === pass) {
+                setSession({ email });
+                router();
+            } else {
+                showAuthError("Correo o contraseña incorrectos.");
+            }
+        }
+
+        function handleRegister(event) {
+            event.preventDefault();
+            const email = document.getElementById('reg-email').value.trim().toLowerCase();
+            const pass = document.getElementById('reg-pass').value;
+            const storeName = document.getElementById('reg-store-name').value.trim();
+            const whatsapp = document.getElementById('reg-whatsapp').value.trim();
+            const db = getDB();
+
+            if (db.users[email]) {
+                showAuthError("Este correo ya está registrado. Inicia sesión.");
+                return;
+            }
+
+            db.users[email] = pass;
+            
+            const slug = storeName.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const newStore = {
+                id: 'store_' + Date.now(),
+                ownerEmail: email,
+                name: storeName,
+                description: 'Catálogo oficial de productos',
+                whatsapp,
+                slug,
+                themeColor: 'indigo'
+            };
+            db.stores.push(newStore);
+            saveDB(db);
+
             setSession({ email });
             router();
+        }
+
+        function showAuthError(msg) {
+            const errBox = document.getElementById('auth-error');
+            errBox.innerText = msg;
+            errBox.classList.remove('hidden');
         }
 
         function simulatePayPalSuccess() {
@@ -346,6 +480,11 @@
             router();
         }
 
+        function toggleStoreSettings() {
+            const box = document.getElementById('store-settings-box');
+            box.classList.toggle('hidden');
+        }
+
         function saveStoreConfig(event) {
             event.preventDefault();
             const user = getSession();
@@ -362,7 +501,8 @@
                 name,
                 description,
                 whatsapp,
-                slug
+                slug,
+                themeColor: 'indigo'
             };
 
             db.stores.push(newStore);
@@ -370,9 +510,26 @@
             router();
         }
 
-        function addProduct(event, storeId) {
+        function updateStoreConfig(event, storeId) {
             event.preventDefault();
             const db = getDB();
+            const store = db.stores.find(s => s.id === storeId);
+            if (!store) return;
+
+            store.name = document.getElementById('edit-store-name').value.trim();
+            store.description = document.getElementById('edit-store-desc').value.trim();
+            store.whatsapp = document.getElementById('edit-store-whatsapp').value.trim();
+            store.themeColor = document.getElementById('edit-store-theme').value;
+            store.slug = store.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+            saveDB(db);
+            router();
+        }
+
+        function saveProduct(event, storeId) {
+            event.preventDefault();
+            const db = getDB();
+            const prodId = document.getElementById('edit-prod-id').value;
             const name = document.getElementById('prod-name').value.trim();
             const price = document.getElementById('prod-price').value.trim();
             const stock = document.getElementById('prod-stock').value.trim();
@@ -380,18 +537,30 @@
             const description = document.getElementById('prod-desc').value.trim();
             const fileInput = document.getElementById('prod-file');
 
-            const saveProductData = (imageUrl) => {
-                const newProduct = {
-                    id: 'prod_' + Date.now(),
-                    storeId,
-                    name,
-                    price,
-                    stock,
-                    discount,
-                    description,
-                    image: imageUrl || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500'
-                };
-                db.products.push(newProduct);
+            const finalizeSave = (imageUrl) => {
+                if (prodId) {
+                    const p = db.products.find(item => item.id === prodId);
+                    if (p) {
+                        p.name = name;
+                        p.price = price;
+                        p.stock = stock;
+                        p.discount = discount;
+                        p.description = description;
+                        if (imageUrl) p.image = imageUrl;
+                    }
+                } else {
+                    const newProduct = {
+                        id: 'prod_' + Date.now(),
+                        storeId,
+                        name,
+                        price,
+                        stock,
+                        discount,
+                        description,
+                        image: imageUrl || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500'
+                    };
+                    db.products.push(newProduct);
+                }
                 saveDB(db);
                 router();
             };
@@ -399,12 +568,43 @@
             if (fileInput.files && fileInput.files[0]) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    saveProductData(e.target.result);
+                    finalizeSave(e.target.result);
                 };
                 reader.readAsDataURL(fileInput.files[0]);
             } else {
-                saveProductData('');
+                if (prodId) {
+                    const p = db.products.find(item => item.id === prodId);
+                    finalizeSave(p ? p.image : '');
+                } else {
+                    finalizeSave('');
+                }
             }
+        }
+
+        function editProductPrompt(productId) {
+            const db = getDB();
+            const p = db.products.find(item => item.id === productId);
+            if (!p) return;
+
+            document.getElementById('edit-prod-id').value = p.id;
+            document.getElementById('prod-name').value = p.name;
+            document.getElementById('prod-price').value = p.price;
+            document.getElementById('prod-stock').value = p.stock || '';
+            document.getElementById('prod-discount').value = p.discount || '';
+            document.getElementById('prod-desc').value = p.description || '';
+            
+            document.getElementById('form-product-title').innerText = "Editar Producto de Tu Catálogo";
+            document.getElementById('btn-submit-prod').innerText = "Actualizar Cambios";
+            document.getElementById('btn-cancel-edit').classList.remove('hidden');
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetProductForm() {
+            document.getElementById('edit-prod-id').value = '';
+            document.getElementById('form-product-title').innerText = "Añadir Nuevo Producto a Tu Catálogo";
+            document.getElementById('btn-submit-prod').innerText = "Guardar Producto";
+            document.getElementById('btn-cancel-edit').classList.add('hidden');
         }
 
         function deleteProduct(productId) {
@@ -422,18 +622,18 @@
 
             if (!grid) return;
 
-            grid.innerHTML = products.length === 0 ? '<p class="col-span-full text-center text-slate-500 py-12">No se encontraron productos.</p>' : 
+            grid.innerHTML = products.length === 0 ? '<div class="col-span-full text-center py-20"><p class="text-slate-400 text-lg font-medium">No se encontraron productos.</p></div>' : 
                 products.map(p => `
-                    <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col">
-                        <div class="h-48 bg-slate-100 overflow-hidden cursor-pointer relative" onclick="openProductModal('${p.id}')">
-                            <img src="${p.image}" alt="${p.name}" class="w-full h-full object-cover">
-                            ${p.discount ? `<span class="absolute top-3 right-3 bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">${p.discount}% OFF</span>` : ''}
+                    <div class="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group">
+                        <div class="h-56 bg-slate-100 overflow-hidden cursor-pointer relative" onclick="openProductModal('${p.id}')">
+                            <img src="${p.image}" alt="${p.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                            ${p.discount ? `<span class="absolute top-3 right-3 bg-rose-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">${p.discount}% OFF</span>` : ''}
                         </div>
-                        <div class="p-4 flex flex-col flex-grow">
-                            <h3 class="font-bold text-lg text-slate-900 cursor-pointer hover:text-indigo-600" onclick="openProductModal('${p.id}')">${p.name}</h3>
-                            <p class="text-slate-600 text-sm mt-1 line-clamp-2 flex-grow">${p.description || 'Sin descripción'}</p>
-                            <div class="mt-4 flex items-center justify-between">
-                                <span class="text-xl font-extrabold text-indigo-600">RD$ ${p.price}</span>
+                        <div class="p-5 flex flex-col flex-grow">
+                            <h3 class="font-bold text-lg text-slate-900 cursor-pointer hover:text-indigo-600 transition" onclick="openProductModal('${p.id}')">${p.name}</h3>
+                            <p class="text-slate-500 text-sm mt-1.5 line-clamp-2 flex-grow leading-relaxed">${p.description || 'Sin descripción detallada.'}</p>
+                            <div class="mt-4 flex items-baseline justify-between">
+                                <span class="text-2xl font-black text-indigo-600">RD$ ${p.price}</span>
                             </div>
                         </div>
                     </div>
@@ -447,11 +647,11 @@
 
             const modalContent = document.getElementById('modal-content');
             modalContent.innerHTML = `
-                <img src="${p.image}" class="w-full h-64 object-cover rounded-xl mb-4">
-                <h3 class="text-2xl font-bold text-slate-900">${p.name}</h3>
-                <p class="text-xl font-extrabold text-indigo-600 mt-2">RD$ ${p.price}</p>
-                <p class="text-sm text-slate-600 mt-4">${p.description || 'Sin descripción detallada.'}</p>
-                ${p.stock ? `<p class="text-xs text-slate-500 mt-2">Stock disponible: ${p.stock}</p>` : ''}
+                <img src="${p.image}" class="w-full h-72 object-cover rounded-2xl mb-4 shadow-md">
+                <h3 class="text-2xl font-black text-slate-900">${p.name}</h3>
+                <p class="text-2xl font-black text-indigo-600 mt-2">RD$ ${p.price}</p>
+                <p class="text-sm text-slate-600 mt-4 leading-relaxed">${p.description || 'Sin descripción detallada.'}</p>
+                ${p.stock ? `<p class="text-xs text-slate-400 mt-3 font-semibold">Stock disponible: ${p.stock} unidades</p>` : ''}
             `;
             document.getElementById('product-modal').classList.remove('hidden');
         }
@@ -460,11 +660,8 @@
             document.getElementById('product-modal').classList.add('hidden');
         }
 
-        function sendAdminSuggestion(event) {
-            event.preventDefault();
-            const name = document.getElementById('sug-name').value;
-            const msg = document.getElementById('sug-msg').value;
-            window.location.href = `mailto:${ADMIN_VIP_EMAIL}?subject=Sugerencia%20SaaS%20de%20${encodeURIComponent(name)}&body=${encodeURIComponent(msg)}`;
+        function installPWA() {
+            alert("Para instalar la app, abre el menú de tu navegador y selecciona 'Agregar a la pantalla principal' o 'Instalar aplicación'.");
         }
 
         window.addEventListener('DOMContentLoaded', router);
