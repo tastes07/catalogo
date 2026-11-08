@@ -40,7 +40,7 @@
       </div>
 
       <nav class="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
-        <button onclick="app.viewDemoStore()" class="hover:text-blue-600 transition-colors">Ver Mi Tienda</button>
+        <button onclick="app.viewDemoStore()" class="hover:text-blue-600 transition-colors">Ver Catálogo Público</button>
         <span id="nav-owner-links" class="hidden items-center gap-6">
           <button onclick="app.navigateHome()" class="hover:text-blue-600 transition-colors">Panel de Administración</button>
           <button onclick="app.viewMyPublicCatalog()" class="hover:text-blue-600 transition-colors flex items-center gap-1.5">
@@ -200,13 +200,13 @@
     </div>
   </div>
 
-  <!-- Modal de Autenticación -->
+  <!-- Modal de Autenticación Exclusivo para Dueños -->
   <div id="auth-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
     <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-100">
       <div class="p-6 border-b border-slate-100 flex items-center justify-between">
         <div>
-          <h3 id="auth-modal-title" class="text-xl font-bold text-slate-900">Iniciar Sesión</h3>
-          <p id="auth-modal-desc" class="text-xs text-slate-500 mt-0.5">Accede a tu panel para gestionar tus productos</p>
+          <h3 id="auth-modal-title" class="text-xl font-bold text-slate-900">Acceso Dueño de Tienda</h3>
+          <p id="auth-modal-desc" class="text-xs text-slate-500 mt-0.5">Inicia sesión para gestionar los productos de tu catálogo</p>
         </div>
         <button onclick="app.closeAuthModal()" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100">
           <i data-lucide="x" class="w-5 h-5"></i>
@@ -215,8 +215,8 @@
 
       <div class="px-6 pt-4 pb-2">
         <div class="flex rounded-lg bg-slate-100 p-1">
-          <button id="auth-tab-login" onclick="app.setAuthMode('login')" class="flex-1 py-1.5 text-xs font-semibold rounded-md bg-white text-slate-900 shadow-sm">Ya tengo cuenta</button>
-          <button id="auth-tab-register" onclick="app.setAuthMode('register')" class="flex-1 py-1.5 text-xs font-semibold rounded-md text-slate-600 hover:text-slate-900">Nuevo registro ($30 USD)</button>
+          <button id="auth-tab-login" onclick="app.setAuthMode('login')" class="flex-1 py-1.5 text-xs font-semibold rounded-md bg-white text-slate-900 shadow-sm">Ya tengo tienda</button>
+          <button id="auth-tab-register" onclick="app.setAuthMode('register')" class="flex-1 py-1.5 text-xs font-semibold rounded-md text-slate-600 hover:text-slate-900">Nueva tienda ($30 USD)</button>
         </div>
       </div>
 
@@ -245,12 +245,12 @@
         </div>
 
         <button type="submit" id="auth-submit-btn" class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm text-sm">
-          <span>Entrar al Panel</span>
+          <span>Entrar al Panel de Administración</span>
         </button>
       </form>
 
       <div class="px-6 pb-6 pt-1 border-t border-slate-100 bg-slate-50/70">
-        <p class="text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-2">Accesos Rápidos de Prueba</p>
+        <p class="text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-2">Acceso Rápido Maestro</p>
         <button onclick="app.quickLogin('tastess07@gmail.com')" class="w-full py-2 px-3 text-xs bg-white hover:bg-amber-50 border border-slate-200 rounded-lg text-slate-700 flex items-center justify-between mb-1.5">
           <span class="font-semibold text-slate-900">tastess07@gmail.com (VIP Maestro - Exento de Pago)</span>
           <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
@@ -290,8 +290,10 @@
         this.seedInitialData();
         this.loadSession();
         this.handleUrlRouting();
+        this.renderNavbar();
         this.render();
-        window.addEventListener('popstate', () => this.handleUrlRouting());
+        window.addEventListener('popstate', () => { this.handleUrlRouting(); this.render(); });
+        window.addEventListener('hashchange', () => { this.handleUrlRouting(); this.render(); });
       }
 
       // CATÁLOGO TOTALMENTE VACÍO AL INICIAR []
@@ -341,9 +343,24 @@
         }
       }
 
+      // REQUISITO #1: ACCESO PÚBLICO AL CATÁLOGO (SIN SUSCRIPCIÓN)
+      // Clientes y visitantes entran directo a ver productos sin inicio de sesión ni pago.
       handleUrlRouting() {
         const params = new URLSearchParams(window.location.search);
-        const storeId = params.get('store');
+        let storeId = params.get('store');
+
+        // Soporte para enlaces hash (#/store/id o #store=id) para GitHub Pages
+        if (!storeId && window.location.hash) {
+          const hash = window.location.hash.replace(/^#\/?/, '');
+          if (hash.startsWith('store/')) {
+            storeId = hash.replace('store/', '');
+          } else if (hash.startsWith('store=')) {
+            storeId = hash.replace('store=', '');
+          } else if (hash.startsWith('catalog/')) {
+            storeId = hash.replace('catalog/', '');
+          }
+        }
+
         if (storeId) {
           const stores = JSON.parse(localStorage.getItem(STORES_KEY) || '{}');
           if (stores[storeId]) {
@@ -354,6 +371,7 @@
         }
 
         if (this.currentUser) {
+          // La pasarela de pago o suscripción es EXCLUSIVA para el dueño de tienda en su panel
           if (this.currentUser.subscriptionStatus === 'pending_payment' && !this.currentUser.isVipExempt) {
             this.currentView = 'paywall';
           } else {
@@ -392,8 +410,8 @@
           ownerLinks.classList.add('hidden');
           ownerLinks.classList.remove('flex');
           container.innerHTML = `
-            <button onclick="app.openAuthModal('login')" class="px-3.5 py-1.5 text-xs font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg">
-              Iniciar Sesión
+            <button onclick="app.openAuthModal('login')" title="Acceso exclusivo para el dueño del negocio" class="px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg">
+              Acceso Dueño
             </button>
             <button onclick="app.openAuthModal('register')" class="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm">
               Crear Mi Tienda ($30/mes)
@@ -432,11 +450,12 @@
               Para ropa, calzado, comida, celulares, tecnología o accesorios. Sube tus fotos, precios y stock. Tus clientes piden por WhatsApp con un solo clic.
             </p>
             <div class="mt-8 flex flex-wrap items-center justify-center gap-4">
-              <button onclick="app.openAuthModal('register')" class="px-6 py-3.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-lg">
-                Comenzar Mi Catálogo ($30 USD/mes)
+              <button onclick="app.viewDemoStore()" class="px-6 py-3.5 text-sm font-bold text-slate-800 bg-white hover:bg-slate-50 border border-slate-300 rounded-xl shadow-sm flex items-center gap-2">
+                <i data-lucide="shopping-bag" class="w-4 h-4 text-blue-600"></i>
+                <span>Explorar Catálogo Público</span>
               </button>
-              <button onclick="app.quickLogin('tastess07@gmail.com')" class="px-6 py-3.5 text-sm font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-xl shadow-sm">
-                Probar como VIP Maestro
+              <button onclick="app.openAuthModal('register')" class="px-6 py-3.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-lg">
+                Comenzar Mi Tienda ($30 USD/mes)
               </button>
             </div>
           </div>
@@ -1082,11 +1101,11 @@
           submitBtn.textContent = 'Continuar al Pago ($30 USD)';
         } else {
           regFields.classList.add('hidden');
-          title.textContent = 'Iniciar Sesión';
-          desc.textContent = 'Accede a tu panel para gestionar tus productos';
+          title.textContent = 'Acceso Dueño de Tienda';
+          desc.textContent = 'Inicia sesión para gestionar los productos de tu catálogo';
           tabLogin.className = 'flex-1 py-1.5 text-xs font-semibold rounded-md bg-white text-slate-900 shadow-sm';
           tabReg.className = 'flex-1 py-1.5 text-xs font-semibold rounded-md text-slate-600 hover:text-slate-900';
-          submitBtn.textContent = 'Entrar al Panel';
+          submitBtn.textContent = 'Entrar al Panel de Administración';
         }
       }
 
@@ -1255,7 +1274,7 @@
       copyStoreLink() {
         const url = `${window.location.origin}${window.location.pathname}?store=${this.activeStore.id}`;
         navigator.clipboard.writeText(url);
-        alert('¡Enlace copiado al portapapeles!');
+        alert('¡Enlace copiado al portapapeles!\n\nComparte este enlace con tus clientes. Podrán entrar directamente a ver tus productos sin iniciar sesión ni pagar nada.');
       }
 
       viewMyPublicCatalog() {
