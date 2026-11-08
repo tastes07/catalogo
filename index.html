@@ -55,12 +55,12 @@
             }
         }
 
-        // --- 1. VISTA PÚBLICA DEL CATÁLOGO (LO QUE VEN LOS CLIENTES DEL DUEÑO DE LA TIENDA) ---
+        // --- 1. VISTA PÚBLICA DEL CATÁLOGO (ENLACE ÚNICO DE CADA TIENDA) ---
         function renderPublicStore(storeName, container) {
             const db = getDB();
             const cleanSearchName = decodeURIComponent(storeName).trim().toLowerCase();
             
-            // Buscar tienda de forma flexible
+            // Búsqueda robusta por slug o nombre exacto
             const store = db.stores.find(s => 
                 (s.slug && s.slug.toLowerCase() === cleanSearchName) || 
                 (s.name && s.name.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanSearchName.replace(/[^a-z0-9]/g, '')) ||
@@ -72,8 +72,8 @@
                     <div class="flex-grow flex items-center justify-center p-6 text-center">
                         <div class="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full border border-slate-100">
                             <div class="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">⚠️</div>
-                            <h2 class="text-2xl font-black text-slate-900 mb-2">Tienda no encontrada</h2>
-                            <p class="text-slate-500 text-sm mb-6">El catálogo "<strong>${storeName}</strong>" no existe o la dirección es incorrecta.</p>
+                            <h2 class="text-2xl font-black text-slate-900 mb-2">Catálogo no encontrado</h2>
+                            <p class="text-slate-500 text-sm mb-6">El enlace "<strong>${storeName}</strong>" no corresponde a ninguna tienda activa.</p>
                             <a href="?" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-semibold text-sm transition shadow-lg shadow-indigo-600/20 inline-block">Crear mi propia tienda</a>
                         </div>
                     </div>
@@ -81,13 +81,12 @@
                 return;
             }
 
-            // Filtrar únicamente los productos que pertenecen a ESTA tienda específica
             const products = db.products.filter(p => p.storeId === store.id);
+            const currencySymbol = store.currency || 'RD$';
             const themeColor = store.themeColor || 'indigo';
             const headerBg = themeColor === 'dark' ? 'bg-slate-900 text-white' : themeColor === 'emerald' ? 'bg-gradient-to-r from-emerald-800 to-teal-900 text-white' : themeColor === 'rose' ? 'bg-gradient-to-r from-rose-800 to-pink-900 text-white' : 'bg-gradient-to-r from-indigo-900 to-slate-900 text-white';
 
             container.innerHTML = `
-                <!-- Cabecera del Catálogo del Dueño -->
                 <header class="${headerBg} py-12 px-6 shadow-lg">
                     <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
                         <div class="text-center md:text-left">
@@ -96,31 +95,30 @@
                             <p class="text-slate-200 text-sm md:text-base mt-2 max-w-xl leading-relaxed">${store.description || 'Explora nuestros productos disponibles'}</p>
                         </div>
                         <div class="w-full md:w-80">
-                            <input type="text" id="search-input" oninput="filterProducts('${store.id}')" placeholder="🔍 Buscar productos..." class="w-full px-4 py-3.5 rounded-2xl bg-white/10 border border-white/20 text-white placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-white text-sm backdrop-blur-md shadow-inner">
+                            <input type="text" id="search-input" oninput="filterProducts('${store.id}', '${currencySymbol}')" placeholder="🔍 Buscar productos..." class="w-full px-4 py-3.5 rounded-2xl bg-white/10 border border-white/20 text-white placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-white text-sm backdrop-blur-md shadow-inner">
                         </div>
                     </div>
                 </header>
 
-                <!-- Cuadrícula de Productos Actualizados en Tiempo Real -->
                 <main class="flex-grow max-w-5xl w-full mx-auto p-4 md:p-8">
                     <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                         ${products.length === 0 ? '<div class="col-span-full text-center py-20"><p class="text-slate-400 text-lg font-medium">Esta tienda aún no tiene productos publicados.</p></div>' : ''}
                         ${products.map(p => `
                             <div class="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group">
-                                <div class="h-56 bg-slate-100 overflow-hidden cursor-pointer relative" onclick="openProductModal('${p.id}')">
+                                <div class="h-56 bg-slate-100 overflow-hidden cursor-pointer relative" onclick="openProductModal('${p.id}', '${currencySymbol}')">
                                     <img src="${p.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500'}" alt="${p.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
                                     ${p.discount ? `<span class="absolute top-3 right-3 bg-rose-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">${p.discount}% OFF</span>` : ''}
                                 </div>
                                 <div class="p-5 flex flex-col flex-grow">
-                                    <h3 class="font-bold text-lg text-slate-900 cursor-pointer hover:text-indigo-600 transition" onclick="openProductModal('${p.id}')">${p.name}</h3>
+                                    <h3 class="font-bold text-lg text-slate-900 cursor-pointer hover:text-indigo-600 transition" onclick="openProductModal('${p.id}', '${currencySymbol}')">${p.name}</h3>
                                     <p class="text-slate-500 text-sm mt-1.5 line-clamp-2 flex-grow leading-relaxed">${p.description || 'Sin descripción detallada.'}</p>
                                     <div class="mt-4 flex items-baseline justify-between">
                                         <div>
-                                            <span class="text-2xl font-black text-indigo-600">RD$ ${p.price}</span>
+                                            <span class="text-2xl font-black text-indigo-600">${currencySymbol} ${p.price}</span>
                                             ${p.stock ? `<span class="block text-xs text-slate-400 mt-0.5">Stock disponible: ${p.stock}</span>` : ''}
                                         </div>
                                     </div>
-                                    <a href="https://wa.me/${store.whatsapp}?text=Hola,%20estoy%20interesado%20en%20el%20producto:%20*${encodeURIComponent(p.name)}*%20(Precio:%20RD$%20${p.price})" target="_blank" class="mt-5 w-full bg-emerald-600 hover:bg-emerald-700 text-white text-center py-3.5 rounded-2xl font-bold text-sm transition shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2">
+                                    <a href="https://wa.me/${store.whatsapp}?text=Hola,%20estoy%20interesado%20en%20el%20producto:%20*${encodeURIComponent(p.name)}*%20(Precio:%20${currencySymbol}%20${p.price})" target="_blank" class="mt-5 w-full bg-emerald-600 hover:bg-emerald-700 text-white text-center py-3.5 rounded-2xl font-bold text-sm transition shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2">
                                         💬 Pedir por WhatsApp
                                     </a>
                                 </div>
@@ -135,19 +133,19 @@
             `;
         }
 
-        // --- 2. AUTENTICACIÓN Y REGISTRO DE CADA DUEÑO DE TIENDA ---
+        // --- 2. AUTENTICACIÓN, REGISTRO Y BLOQUEO DE PAGOS ---
         function renderAuthOrDashboard(container) {
             const user = getSession();
             const db = getDB();
 
             if (!user) {
                 container.innerHTML = `
+                    <!-- NOTA BILINGÜE Y DE CAPACIDAD -->
                     <div class="bg-indigo-600 text-white px-4 py-3 text-xs md:text-sm shadow-md">
                         <div class="max-w-4xl mx-auto flex justify-between items-start gap-4 pr-8">
                             <div>
-                                <p class="font-semibold mb-1">📢 Aviso del sistema:</p>
-                                <p>Plataforma de catálogos digitales. Soporte técnico en <strong class="underline">${ADMIN_VIP_EMAIL}</strong>.</p>
-                                <p class="mt-1">💳 <strong>Pagos por PayPal:</strong> La creación de tienda requiere suscripción mensual de $30 USD vía PayPal.</p>
+                                <p class="font-semibold mb-1">🇪🇸 [Español]: Esta app está diseñada para una cantidad específica de usuarios. Si experimentas saturación, escríbenos a <strong class="underline">${ADMIN_VIP_EMAIL}</strong>. Los pagos se procesan exclusivamente por PayPal ($30/mes).</p>
+                                <p class="mt-1">🇬🇧 [English]: This app is designed for a specific number of users. If you experience saturation, write to us at <strong class="underline">${ADMIN_VIP_EMAIL}</strong>. Payments are processed exclusively via PayPal ($30/month).</p>
                             </div>
                             <button onclick="this.parentElement.parentElement.style.display='none'" class="text-white font-bold text-lg bg-indigo-700 hover:bg-indigo-800 px-2.5 py-1 rounded-xl">×</button>
                         </div>
@@ -176,7 +174,7 @@
                                     <label class="block text-xs font-semibold text-slate-600 mb-1">Contraseña</label>
                                     <input type="password" id="login-pass" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500">
                                 </div>
-                                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3.5 rounded-2xl text-sm transition shadow-lg shadow-indigo-600/20">Entrar a mi Tienda</button>
+                                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3.5 rounded-2xl text-sm transition shadow-lg shadow-indigo-600/20">Entrar a mi Cuenta</button>
                             </form>
 
                             <form id="form-register" onsubmit="handleRegister(event)" class="space-y-4 hidden">
@@ -193,8 +191,19 @@
                                     <input type="text" id="reg-store-name" placeholder="Ej: Moda Express" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500">
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-semibold text-slate-600 mb-1">WhatsApp de tu Tienda</label>
-                                    <input type="text" id="reg-whatsapp" placeholder="Ej: 18095555555" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500">
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">WhatsApp (Cualquier país, ej: +18095555555 o +34...)</label>
+                                    <input type="text" id="reg-whatsapp" placeholder="Ej: +18095555555" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Moneda del Catálogo</label>
+                                    <select id="reg-currency" class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
+                                        <option value="RD$">RD$ (Peso Dominicano)</option>
+                                        <option value="USD">$ (Dólar Estadounidense)</option>
+                                        <option value="EUR">€ (Euro)</option>
+                                        <option value="MXN">$ (Peso Mexicano)</option>
+                                        <option value="COP">$ (Peso Colombiano)</option>
+                                        <option value="ARS">$ (Peso Argentino)</option>
+                                    </select>
                                 </div>
                                 <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3.5 rounded-2xl text-sm transition shadow-lg shadow-indigo-600/20">Registrarme y Continuar</button>
                             </form>
@@ -206,12 +215,13 @@
                 const hasPaid = db.subscriptions[user.email] === true;
 
                 if (!isVip && !hasPaid) {
+                    // BLOQUEO OBLIGATORIO DE SUSCRIPCIÓN
                     container.innerHTML = `
                         <div class="flex-grow flex items-center justify-center p-4">
                             <div class="bg-white p-8 rounded-3xl shadow-xl max-w-lg w-full border border-indigo-100 text-center">
                                 <span class="bg-amber-100 text-amber-800 text-xs px-3 py-1.5 rounded-full font-bold uppercase">Suscripción Requerida ($30/mes)</span>
                                 <h2 class="text-3xl font-black text-slate-900 mt-4">Activa Tu Tienda</h2>
-                                <p class="text-sm text-slate-600 mt-2 mb-6">Para mantener tu enlace único activo con gestión de productos y fotos ilimitadas, completa tu suscripción mensual de <strong>$30 USD</strong> vía PayPal.</p>
+                                <p class="text-sm text-slate-600 mt-2 mb-6">Para tener acceso a tu panel de administración y generar tu enlace único de catálogo, debes completar tu suscripción mensual de <strong>$30 USD</strong> vía PayPal.</p>
                                 
                                 <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-6 text-left text-xs text-slate-600 space-y-1.5">
                                     <p>📌 Cuenta: <strong>${user.email}</strong></p>
@@ -220,10 +230,10 @@
 
                                 <div class="space-y-3">
                                     <a href="${PAYPAL_SUBSCRIPTION_LINK}" target="_blank" onclick="simulatePayPalSuccess()" class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-2xl text-sm transition shadow-md shadow-blue-600/20">
-                                        Suscribirse con PayPal ($30/mes)
+                                        Pagar Suscripción en PayPal ($30/mes)
                                     </a>
                                     <button onclick="confirmPaymentManual()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3.5 rounded-2xl text-sm transition">
-                                        Ya pagué en PayPal, entrar a mi panel
+                                        Ya realicé mi pago en PayPal, verificar acceso
                                     </button>
                                     <button onclick="logout()" class="w-full text-slate-400 hover:text-slate-700 text-xs py-2">Cerrar sesión</button>
                                 </div>
@@ -236,7 +246,7 @@
             }
         }
 
-        // --- 3. PANEL DE CADA CLIENTE PARA GESTIONAR SU PROPIO CATÁLOGO ---
+        // --- 3. PANEL DE ADMINISTRACIÓN EXCLUSIVO PARA SUSCRIPTORES ---
         function renderDashboardContent(container, user) {
             const db = getDB();
             let store = db.stores.find(s => s.ownerEmail.toLowerCase() === user.email.toLowerCase());
@@ -244,13 +254,11 @@
             container.innerHTML = `
                 <header class="bg-white border-b border-slate-200 py-4 px-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3">
                     <div>
-                        <h1 class="font-bold text-lg text-slate-800">Panel de Administración de Tienda</h1>
+                        <h1 class="font-bold text-lg text-slate-800">Panel de Administración</h1>
                         <p class="text-xs text-slate-400">${user.email}</p>
                     </div>
                     <div class="flex items-center gap-3">
-                        <button onclick="installPWA()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-4 py-2 rounded-xl text-xs transition flex items-center gap-1.5">
-                            📲 Descargar App
-                        </button>
+                        <button onclick="installPWA()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-4 py-2 rounded-xl text-xs transition">📲 Descargar App</button>
                         <button onclick="logout()" class="text-rose-600 hover:bg-rose-50 px-3 py-2 rounded-xl text-xs font-semibold transition">Cerrar Sesión</button>
                     </div>
                 </header>
@@ -259,40 +267,51 @@
                     ${!store ? `
                         <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
                             <h2 class="text-2xl font-bold mb-2">Configura tu Tienda</h2>
-                            <p class="text-sm text-slate-500 mb-6">Establece el nombre y la descripción para tu enlace público.</p>
+                            <p class="text-sm text-slate-500 mb-6">Establece los detalles de tu catálogo público.</p>
                             <form onsubmit="saveStoreConfig(event)" class="space-y-4">
                                 <div>
                                     <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre de la Tienda</label>
                                     <input type="text" id="store-name" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Descripción del catálogo</label>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Descripción</label>
                                     <input type="text" id="store-desc" class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-semibold text-slate-600 mb-1">WhatsApp</label>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">WhatsApp (Cualquier país)</label>
                                     <input type="text" id="store-whatsapp" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
                                 </div>
-                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-2xl text-sm transition shadow-md">Crear Tienda</button>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Moneda</label>
+                                    <select id="store-currency" class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
+                                        <option value="RD$">RD$ (Peso Dominicano)</option>
+                                        <option value="USD">$ (Dólar)</option>
+                                        <option value="EUR">€ (Euro)</option>
+                                        <option value="MXN">$ (Peso Mexicano)</option>
+                                        <option value="COP">$ (Peso Colombiano)</option>
+                                        <option value="ARS">$ (Peso Argentino)</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-2xl text-sm transition shadow-md">Crear mi Enlace Único</button>
                             </form>
                         </div>
                     ` : `
                         <div class="bg-gradient-to-r from-indigo-50 to-slate-50 border border-indigo-100 p-6 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                             <div>
-                                <span class="bg-indigo-600 text-white text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-wider">Tu Tienda Activa</span>
+                                <span class="bg-indigo-600 text-white text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-wider">Tu Enlace Único Activo</span>
                                 <h2 class="text-2xl font-black text-slate-900 mt-2">${store.name}</h2>
-                                <p class="text-xs text-slate-500 mt-1">Este es tu enlace único para compartir con tus clientes:</p>
+                                <p class="text-xs text-slate-500 mt-1">Comparte este enlace exacto con tus clientes para que vean tu catálogo:</p>
                                 <a href="?store=${encodeURIComponent(store.slug || store.name)}" target="_blank" class="text-indigo-600 font-bold text-sm underline break-all mt-1 inline-block">${window.location.origin}${window.location.pathname}?store=${encodeURIComponent(store.slug || store.name)}</a>
                             </div>
-                            <button onclick="toggleStoreSettings()" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-4 py-2.5 rounded-2xl text-xs font-semibold transition shadow-sm">⚙️ Ajustes y Color</button>
+                            <button onclick="toggleStoreSettings()" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-4 py-2.5 rounded-2xl text-xs font-semibold transition shadow-sm">⚙️ Ajustes</button>
                         </div>
 
-                        <!-- Formulario de Ajustes y Color de la Tienda del Cliente -->
+                        <!-- Formulario de Ajustes -->
                         <div id="store-settings-box" class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hidden">
-                            <h3 class="font-bold text-lg mb-4">Modificar Apariencia y Datos de tu Tienda</h3>
+                            <h3 class="font-bold text-lg mb-4">Modificar Datos de la Tienda</h3>
                             <form onsubmit="updateStoreConfig(event, '${store.id}')" class="space-y-4">
                                 <div>
-                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre de la Tienda</label>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre</label>
                                     <input type="text" id="edit-store-name" value="${store.name}" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
                                 </div>
                                 <div>
@@ -300,25 +319,36 @@
                                     <input type="text" id="edit-store-desc" value="${store.description || ''}" class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-semibold text-slate-600 mb-1">WhatsApp para Pedidos</label>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">WhatsApp</label>
                                     <input type="text" id="edit-store-whatsapp" value="${store.whatsapp}" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Moneda</label>
+                                    <select id="edit-store-currency" class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
+                                        <option value="RD$" ${store.currency === 'RD$' ? 'selected' : ''}>RD$</option>
+                                        <option value="USD" ${store.currency === 'USD' ? 'selected' : ''}>$ USD</option>
+                                        <option value="EUR" ${store.currency === 'EUR' ? 'selected' : ''}>€ EUR</option>
+                                        <option value="MXN" ${store.currency === 'MXN' ? 'selected' : ''}>$ MXN</option>
+                                        <option value="COP" ${store.currency === 'COP' ? 'selected' : ''}>$ COP</option>
+                                        <option value="ARS" ${store.currency === 'ARS' ? 'selected' : ''}>$ ARS</option>
+                                    </select>
                                 </div>
                                 <div>
                                     <label class="block text-xs font-semibold text-slate-600 mb-1">Color del Catálogo</label>
                                     <select id="edit-store-theme" class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
-                                        <option value="indigo" ${store.themeColor === 'indigo' ? 'selected' : ''}>Azul / Índigo Profesional</option>
+                                        <option value="indigo" ${store.themeColor === 'indigo' ? 'selected' : ''}>Índigo Profesional</option>
                                         <option value="dark" ${store.themeColor === 'dark' ? 'selected' : ''}>Negro Minimalista</option>
                                         <option value="emerald" ${store.themeColor === 'emerald' ? 'selected' : ''}>Verde Esmeralda</option>
-                                        <option value="rose" ${store.themeColor === 'rose' ? 'selected' : ''}>Rosa / Fucsia Moderno</option>
+                                        <option value="rose" ${store.themeColor === 'rose' ? 'selected' : ''}>Rosa Moderno</option>
                                     </select>
                                 </div>
                                 <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2.5 rounded-2xl text-sm transition">Guardar Cambios</button>
                             </form>
                         </div>
 
-                        <!-- Formulario de Añadir / Editar Producto (EXCLUSIVO DE SU TIENDA) -->
+                        <!-- Formulario de Productos (Añadir / Editar con descripción completa) -->
                         <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
-                            <h3 id="form-product-title" class="font-bold text-lg mb-4">Añadir Nuevo Producto a Tu Catálogo</h3>
+                            <h3 id="form-product-title" class="font-bold text-lg mb-4">Añadir Producto a Tu Catálogo</h3>
                             <form onsubmit="saveProduct(event, '${store.id}')" class="space-y-4">
                                 <input type="hidden" id="edit-prod-id" value="">
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -327,7 +357,7 @@
                                         <input type="text" id="prod-name" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
                                     </div>
                                     <div>
-                                        <label class="block text-xs font-semibold text-slate-600 mb-1">Precio (RD$)</label>
+                                        <label class="block text-xs font-semibold text-slate-600 mb-1">Precio (${store.currency || 'RD$'})</label>
                                         <input type="number" id="prod-price" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
                                     </div>
                                 </div>
@@ -346,8 +376,8 @@
                                     </div>
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Descripción detallada</label>
-                                    <textarea id="prod-desc" class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm h-20"></textarea>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Descripción detallada del producto</label>
+                                    <textarea id="prod-desc" placeholder="Escribe detalles, características o medidas..." required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm h-24"></textarea>
                                 </div>
                                 <div class="flex gap-3">
                                     <button type="submit" id="btn-submit-prod" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-2xl text-sm transition shadow-md shadow-indigo-600/20">Guardar Producto</button>
@@ -356,7 +386,7 @@
                             </form>
                         </div>
 
-                        <!-- Lista de Sus Productos (Con opción de Editar o Eliminar) -->
+                        <!-- Lista de Productos con Edición y Eliminación -->
                         <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
                             <h3 class="font-bold text-lg mb-4">Productos en Tu Catálogo</h3>
                             <div class="space-y-3">
@@ -367,7 +397,7 @@
                                             <img src="${p.image}" class="w-14 h-14 object-cover rounded-xl shadow-sm">
                                             <div>
                                                 <h4 class="font-bold text-sm text-slate-900">${p.name}</h4>
-                                                <p class="text-xs text-indigo-600 font-bold mt-0.5">RD$ ${p.price} ${p.stock ? `• Stock: ${p.stock}` : ''}</p>
+                                                <p class="text-xs text-indigo-600 font-bold mt-0.5">${store.currency || 'RD$'} ${p.price} ${p.stock ? `• Stock: ${p.stock}` : ''}</p>
                                             </div>
                                         </div>
                                         <div class="flex items-center gap-2">
@@ -383,7 +413,7 @@
             `;
         }
 
-        // --- FUNCIONES DEL SISTEMA ---
+        // --- FUNCIONES Y ACCIONES DEL SISTEMA ---
         function switchTab(tab) {
             const loginTab = document.getElementById('tab-login');
             const regTab = document.getElementById('tab-register');
@@ -429,6 +459,7 @@
             const pass = document.getElementById('reg-pass').value;
             const storeName = document.getElementById('reg-store-name').value.trim();
             const whatsapp = document.getElementById('reg-whatsapp').value.trim();
+            const currency = document.getElementById('reg-currency').value;
             const db = getDB();
 
             if (db.users[email]) {
@@ -445,6 +476,7 @@
                 name: storeName,
                 description: 'Catálogo oficial de productos',
                 whatsapp,
+                currency,
                 slug,
                 themeColor: 'indigo'
             };
@@ -467,12 +499,12 @@
                 const db = getDB();
                 db.subscriptions[user.email] = true;
                 saveDB(db);
+                router();
             }
         }
 
         function confirmPaymentManual() {
             simulatePayPalSuccess();
-            router();
         }
 
         function logout() {
@@ -493,6 +525,7 @@
             const name = document.getElementById('store-name').value.trim();
             const description = document.getElementById('store-desc').value.trim();
             const whatsapp = document.getElementById('store-whatsapp').value.trim();
+            const currency = document.getElementById('store-currency').value;
             const slug = name.toLowerCase().replace(/[^a-z0-9]/g, '');
 
             const newStore = {
@@ -501,6 +534,7 @@
                 name,
                 description,
                 whatsapp,
+                currency,
                 slug,
                 themeColor: 'indigo'
             };
@@ -519,6 +553,7 @@
             store.name = document.getElementById('edit-store-name').value.trim();
             store.description = document.getElementById('edit-store-desc').value.trim();
             store.whatsapp = document.getElementById('edit-store-whatsapp').value.trim();
+            store.currency = document.getElementById('edit-store-currency').value;
             store.themeColor = document.getElementById('edit-store-theme').value;
             store.slug = store.name.toLowerCase().replace(/[^a-z0-9]/g, '');
 
@@ -602,7 +637,7 @@
 
         function resetProductForm() {
             document.getElementById('edit-prod-id').value = '';
-            document.getElementById('form-product-title').innerText = "Añadir Nuevo Producto a Tu Catálogo";
+            document.getElementById('form-product-title').innerText = "Añadir Producto a Tu Catálogo";
             document.getElementById('btn-submit-prod').innerText = "Guardar Producto";
             document.getElementById('btn-cancel-edit').classList.add('hidden');
         }
@@ -614,7 +649,7 @@
             router();
         }
 
-        function filterProducts(storeId) {
+        function filterProducts(storeId, currencySymbol) {
             const query = document.getElementById('search-input').value.toLowerCase();
             const db = getDB();
             const products = db.products.filter(p => p.storeId === storeId && p.name.toLowerCase().includes(query));
@@ -625,22 +660,22 @@
             grid.innerHTML = products.length === 0 ? '<div class="col-span-full text-center py-20"><p class="text-slate-400 text-lg font-medium">No se encontraron productos.</p></div>' : 
                 products.map(p => `
                     <div class="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group">
-                        <div class="h-56 bg-slate-100 overflow-hidden cursor-pointer relative" onclick="openProductModal('${p.id}')">
+                        <div class="h-56 bg-slate-100 overflow-hidden cursor-pointer relative" onclick="openProductModal('${p.id}', '${currencySymbol}')">
                             <img src="${p.image}" alt="${p.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
                             ${p.discount ? `<span class="absolute top-3 right-3 bg-rose-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">${p.discount}% OFF</span>` : ''}
                         </div>
                         <div class="p-5 flex flex-col flex-grow">
-                            <h3 class="font-bold text-lg text-slate-900 cursor-pointer hover:text-indigo-600 transition" onclick="openProductModal('${p.id}')">${p.name}</h3>
+                            <h3 class="font-bold text-lg text-slate-900 cursor-pointer hover:text-indigo-600 transition" onclick="openProductModal('${p.id}', '${currencySymbol}')">${p.name}</h3>
                             <p class="text-slate-500 text-sm mt-1.5 line-clamp-2 flex-grow leading-relaxed">${p.description || 'Sin descripción detallada.'}</p>
                             <div class="mt-4 flex items-baseline justify-between">
-                                <span class="text-2xl font-black text-indigo-600">RD$ ${p.price}</span>
+                                <span class="text-2xl font-black text-indigo-600">${currencySymbol} ${p.price}</span>
                             </div>
                         </div>
                     </div>
                 `).join('');
         }
 
-        function openProductModal(productId) {
+        function openProductModal(productId, currencySymbol) {
             const db = getDB();
             const p = db.products.find(item => item.id === productId);
             if (!p) return;
@@ -649,7 +684,7 @@
             modalContent.innerHTML = `
                 <img src="${p.image}" class="w-full h-72 object-cover rounded-2xl mb-4 shadow-md">
                 <h3 class="text-2xl font-black text-slate-900">${p.name}</h3>
-                <p class="text-2xl font-black text-indigo-600 mt-2">RD$ ${p.price}</p>
+                <p class="text-2xl font-black text-indigo-600 mt-2">${currencySymbol} ${p.price}</p>
                 <p class="text-sm text-slate-600 mt-4 leading-relaxed">${p.description || 'Sin descripción detallada.'}</p>
                 ${p.stock ? `<p class="text-xs text-slate-400 mt-3 font-semibold">Stock disponible: ${p.stock} unidades</p>` : ''}
             `;
