@@ -7,7 +7,6 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <meta name="theme-color" content="#4f46e5">
-    <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22Taste%20Cat%C3%A1logo%22%2C%22short_name%22%3A%22Cat%C3%A1logo%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23ffffff%22%2C%22theme_color%22%3A%22%234f46e5%22%2C%22icons%22%3A%5B%5D%7D">
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
 
@@ -21,7 +20,7 @@
 
     <!-- MODAL DE DETALLES DE PRODUCTO -->
     <div id="product-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-lg w-full p-6 relative shadow-2xl animate-in fade-in zoom-in duration-200">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 relative shadow-2xl">
             <button onclick="closeProductModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 text-2xl font-bold bg-slate-100 hover:bg-slate-200 w-10 h-10 rounded-full flex items-center justify-center transition">×</button>
             <div id="modal-content"></div>
         </div>
@@ -29,45 +28,23 @@
 
     <!-- SDKs DE FIREBASE Y LÓGICA GENERAL -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-analytics.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, query, where } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
-        // =========================================================================
-        // PEGA AQUÍ TUS CREDENCIALES EXACTAS DE FIREBASE (EL SCREEN QUE COPIASTE)
-        // =========================================================================
+        // TUS CREDENCIALES OFICIALES DE FIREBASE INTEGRADAS
         const firebaseConfig = {
-            apiKey: <script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
-
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyB8E7mss81AGLSq_s1qDshwlfbozmZTMQc",
-    authDomain: "tastes-catalogo.firebaseapp.com",
-    projectId: "tastes-catalogo",
-    storageBucket: "tastes-catalogo.firebasestorage.app",
-    messagingSenderId: "971226394495",
-    appId: "1:971226394495:web:9c2fdbe7bac94a7793b44a",
-    measurementId: "G-T2QLLZF47D"
-  };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-</script>
-            authDomain: 
-            projectId: 
-            storageBucket: 
-            messagingSenderId: 
-            appId: 
+            apiKey: "AIzaSyB8E7mss81AGLSq_s1qDshwlfbozmZTMQc",
+            authDomain: "tastes-catalogo.firebaseapp.com",
+            projectId: "tastes-catalogo",
+            storageBucket: "tastes-catalogo.firebasestorage.app",
+            messagingSenderId: "971226394495",
+            appId: "1:971226394495:web:9c2fdbe7bac94a7793b44a",
+            measurementId: "G-T2QLLZF47D"
         };
 
-        // Inicializar Firebase
         const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
         const db = getFirestore(app);
 
         const ADMIN_VIP_EMAIL = "tastess07@gmail.com";
@@ -100,7 +77,7 @@
             }
         }
 
-        // --- 1. VISTA PÚBLICA DEL CATÁLOGO (DESDE FIREBASE) ---
+        // --- VISTA PÚBLICA DEL CATÁLOGO ---
         async function renderPublicStore(storeSlug, container) {
             try {
                 container.innerHTML = `<div class="flex-grow flex items-center justify-center p-6 text-center"><div class="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div><p class="text-slate-400 text-sm">Buscando catálogo en la nube...</p></div>`;
@@ -116,7 +93,7 @@
                                 <div class="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">⚠️</div>
                                 <h2 class="text-2xl font-black text-slate-900 mb-2">Catálogo no encontrado</h2>
                                 <p class="text-slate-500 text-sm mb-6">El enlace "<strong>${storeSlug}</strong>" no corresponde a ninguna tienda activa en la nube.</p>
-                                <a href="?" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-semibold text-sm transition shadow-lg shadow-indigo-600/20 inline-block">Crear mi propia tienda</a>
+                                <a href="?" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-semibold text-sm transition shadow-lg inline-block">Crear mi propia tienda</a>
                             </div>
                         </div>
                     `;
@@ -130,7 +107,6 @@
                     storeDocId = docSnap.id;
                 });
 
-                // Cargar productos de esta tienda desde Firestore
                 const productsRef = collection(db, "products");
                 const prodQuery = query(productsRef, where("storeId", "==", storeDocId));
                 const prodSnapshot = await getDocs(prodQuery);
@@ -146,35 +122,28 @@
                     <header class="${headerBg} py-12 px-6 shadow-lg w-full">
                         <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
                             <div class="text-center md:text-left">
-                                <span class="bg-white/10 text-white text-[11px] px-3 py-1 rounded-full font-bold uppercase tracking-wider backdrop-blur-md">Catálogo Oficial</span>
+                                <span class="bg-white/10 text-white text-[11px] px-3 py-1 rounded-full font-bold uppercase tracking-wider">Catálogo Oficial</span>
                                 <h1 class="text-4xl md:text-5xl font-black tracking-tight mt-2">${storeData.name}</h1>
                                 <p class="text-slate-200 text-sm md:text-base mt-2 max-w-xl leading-relaxed">${storeData.description || 'Explora nuestros productos disponibles'}</p>
                             </div>
-                            <div class="w-full md:w-80">
-                                <input type="text" id="search-input" oninput="filterProductsLocal(${JSON.stringify(products).replace(/"/g, '&quot;')}, '${currencySymbol}')" placeholder="🔍 Buscar productos..." class="w-full px-4 py-3.5 rounded-2xl bg-white/10 border border-white/20 text-white placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-white text-sm backdrop-blur-md shadow-inner">
-                            </div>
                         </div>
                     </header>
-
                     <main class="flex-grow max-w-5xl w-full mx-auto p-4 md:p-8">
-                        <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                             ${products.length === 0 ? '<div class="col-span-full text-center py-20"><p class="text-slate-400 text-lg font-medium">Esta tienda aún no tiene productos publicados.</p></div>' : ''}
                             ${products.map(p => `
                                 <div class="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group">
-                                    <div class="h-56 bg-slate-100 overflow-hidden cursor-pointer relative" onclick="openProductModalContent(${JSON.stringify(p).replace(/"/g, '&quot;')}, '${currencySymbol}')">
+                                    <div class="h-56 bg-slate-100 overflow-hidden relative cursor-pointer" onclick="openProductModalContent(${JSON.stringify(p).replace(/"/g, '&quot;')}, '${currencySymbol}')">
                                         <img src="${p.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500'}" alt="${p.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
-                                        ${p.discount ? `<span class="absolute top-3 right-3 bg-rose-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">${p.discount}% OFF</span>` : ''}
                                     </div>
                                     <div class="p-5 flex flex-col flex-grow">
                                         <h3 class="font-bold text-lg text-slate-900 cursor-pointer hover:text-indigo-600 transition" onclick="openProductModalContent(${JSON.stringify(p).replace(/"/g, '&quot;')}, '${currencySymbol}')">${p.name}</h3>
-                                        <p class="text-slate-500 text-sm mt-1.5 line-clamp-2 flex-grow leading-relaxed">${p.description || 'Sin descripción detallada.'}</p>
+                                        <p class="text-slate-500 text-sm mt-1.5 line-clamp-2 flex-grow">${p.description || 'Sin descripción detallada.'}</p>
                                         <div class="mt-4 flex items-baseline justify-between">
-                                            <div>
-                                                <span class="text-2xl font-black text-indigo-600">${currencySymbol} ${p.price}</span>
-                                                ${p.stock ? `<span class="block text-xs text-slate-400 mt-0.5">Stock: ${p.stock}</span>` : ''}
-                                            </div>
+                                            <span class="text-2xl font-black text-indigo-600">${currencySymbol} ${p.price}</span>
+                                            ${p.stock ? `<span class="text-xs text-slate-400">Stock: ${p.stock}</span>` : ''}
                                         </div>
-                                        <a href="https://wa.me/${storeData.whatsapp.replace(/[^0-9]/g, '')}?text=Hola,%20estoy%20interesado%20en%20el%20producto:%20*${encodeURIComponent(p.name)}*%20(Precio:%20${currencySymbol}%20${p.price})" target="_blank" class="mt-5 w-full bg-emerald-600 hover:bg-emerald-700 text-white text-center py-3.5 rounded-2xl font-bold text-sm transition shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2">
+                                        <a href="https://wa.me/${storeData.whatsapp.replace(/[^0-9]/g, '')}?text=Hola,%20estoy%20interesado%20en%20el%20producto:%20*${encodeURIComponent(p.name)}*%20(Precio:%20${currencySymbol}%20${p.price})" target="_blank" class="mt-5 w-full bg-emerald-600 hover:bg-emerald-700 text-white text-center py-3.5 rounded-2xl font-bold text-sm transition shadow-lg flex items-center justify-center gap-2">
                                             💬 Pedir por WhatsApp
                                         </a>
                                     </div>
@@ -182,18 +151,14 @@
                             `).join('')}
                         </div>
                     </main>
-
-                    <footer class="bg-white border-t border-slate-200 py-6 px-4 text-center text-xs text-slate-400 mt-auto">
-                        Taste Catálogo - Tiendas Digitales en la Nube.
-                    </footer>
                 `;
             } catch (error) {
                 console.error(error);
-                container.innerHTML = `<div class="flex-grow flex items-center justify-center p-6 text-center text-rose-600 font-semibold">Error al conectar con Firebase. Revisa tus credenciales en el código.</div>`;
+                container.innerHTML = `<div class="text-center py-20 text-rose-600 font-semibold">Error al cargar la tienda desde Firebase.</div>`;
             }
         }
 
-        // --- 2. AUTENTICACIÓN Y PANEL DE CONTROL ---
+        // --- PANEL Y AUTENTICACIÓN ---
         function renderAuthOrDashboard(container) {
             container.className = "flex-grow flex flex-col items-center justify-center p-4 w-full";
             const user = getSession();
@@ -201,9 +166,8 @@
             if (!user) {
                 container.innerHTML = `
                     <div class="bg-indigo-600 text-white px-4 py-3 text-xs md:text-sm rounded-2xl mb-6 max-w-md w-full text-center shadow-md">
-                        <p class="font-semibold">🇪🇸 [Español]: Suscripciones procesadas por PayPal ($30/mes). Escríbenos a ${ADMIN_VIP_EMAIL}.</p>
+                        <p class="font-semibold">🇪🇸 Suscripciones procesadas por PayPal ($30/mes). Escríbenos a ${ADMIN_VIP_EMAIL}.</p>
                     </div>
-
                     <div class="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full border border-slate-100">
                         <div class="text-center mb-6">
                             <h2 class="text-3xl font-black text-slate-900">Taste Catálogo</h2>
@@ -212,13 +176,13 @@
                         <form onsubmit="handleAuthLogin(event)" class="space-y-4">
                             <div>
                                 <label class="block text-xs font-semibold text-slate-600 mb-1">Correo Electrónico</label>
-                                <input type="email" id="auth-email" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500">
+                                <input type="email" id="auth-email" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-slate-600 mb-1">Contraseña</label>
-                                <input type="password" id="auth-pass" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500">
+                                <input type="password" id="auth-pass" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
                             </div>
-                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3.5 rounded-2xl text-sm transition shadow-lg shadow-indigo-600/20">Entrar a mi Panel</button>
+                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3.5 rounded-2xl text-sm transition shadow-lg">Entrar / Registrarse</button>
                         </form>
                     </div>
                 `;
@@ -236,7 +200,6 @@
 
         async function renderDashboard(container, user) {
             container.innerHTML = `<div class="text-center py-20"><div class="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div><p class="text-slate-400 text-sm">Cargando tu panel...</p></div>`;
-            
             try {
                 const storesRef = collection(db, "stores");
                 const q = query(storesRef, where("ownerEmail", "==", user.email.toLowerCase()));
@@ -249,31 +212,19 @@
                     storeId = doc.id;
                 });
 
-                const isVip = user.email.toLowerCase() === ADMIN_VIP_EMAIL.toLowerCase();
-
                 container.innerHTML = `
                     <header class="bg-white border-b border-slate-200 py-4 px-6 shadow-sm flex justify-between items-center w-full">
                         <div>
-                            <h1 class="font-bold text-lg text-slate-800">Panel de Administración - Taste Catálogo</h1>
+                            <h1 class="font-bold text-lg text-slate-800">Panel de Administración</h1>
                             <p class="text-xs text-slate-400">${user.email}</p>
                         </div>
                         <button onclick="logout()" class="text-rose-600 hover:bg-rose-50 px-3 py-2 rounded-xl text-xs font-semibold transition">Cerrar Sesión</button>
                     </header>
-
                     <main class="flex-grow max-w-4xl w-full mx-auto p-4 md:p-8 space-y-6">
-                        ${!isVip ? `
-                            <div class="bg-blue-50 border border-blue-200 p-6 rounded-3xl text-center">
-                                <h3 class="font-black text-blue-900 text-lg mb-1">Suscripción Activa Requerida ($30/mes)</h3>
-                                <p class="text-xs text-blue-700 mb-4">Para publicar tu tienda en la nube, completa tu pago mensual vía PayPal.</p>
-                                <a href="${PAYPAL_SUBSCRIPTION_LINK}" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 rounded-2xl text-xs inline-block shadow-md">Pagar en PayPal</a>
-                            </div>
-                        ` : ''}
-
                         ${!store ? `
                             <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
                                 <h2 class="text-2xl font-bold mb-2">Crea los Datos de tu Tienda</h2>
-                                <p class="text-sm text-slate-500 mb-6">Configura tu enlace único para la nube.</p>
-                                <form onsubmit="createStoreCloud(event, '${user.email}')" class="space-y-4">
+                                <form onsubmit="createStoreCloud(event, '${user.email}')" class="space-y-4 mt-4">
                                     <div>
                                         <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre de la Tienda</label>
                                         <input type="text" id="new-store-name" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
@@ -292,53 +243,33 @@
                                             <option value="RD$">RD$ (Peso Dominicano)</option>
                                             <option value="USD">$ (Dólar)</option>
                                             <option value="EUR">€ (Euro)</option>
-                                            <option value="MXN">$ (Peso Mexicano)</option>
-                                            <option value="COP">$ (Peso Colombiano)</option>
-                                            <option value="ARS">$ (Peso Argentino)</option>
                                         </select>
                                     </div>
-                                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-2xl text-sm transition shadow-md">Crear mi Tienda en la Nube</button>
+                                    <button type="submit" class="bg-indigo-600 text-white font-semibold px-6 py-3 rounded-2xl text-sm">Crear mi Tienda en la Nube</button>
                                 </form>
                             </div>
                         ` : `
-                            <div class="bg-gradient-to-r from-indigo-50 to-slate-50 border border-indigo-100 p-6 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                <div>
-                                    <span class="bg-indigo-600 text-white text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-wider">Enlace Único Global Activo</span>
-                                    <h2 class="text-2xl font-black text-slate-900 mt-2">${store.name}</h2>
-                                    <p class="text-xs text-slate-500 mt-1">Comparte este enlace con cualquier persona en el mundo:</p>
-                                    <a href="?store=${encodeURIComponent(store.slug)}" target="_blank" class="text-indigo-600 font-bold text-sm underline break-all mt-1 inline-block">${window.location.origin}${window.location.pathname}?store=${encodeURIComponent(store.slug)}</a>
-                                </div>
+                            <div class="bg-indigo-50 border border-indigo-100 p-6 rounded-3xl">
+                                <h2 class="text-2xl font-black text-slate-900">${store.name}</h2>
+                                <p class="text-xs text-slate-500 mt-1">Tu enlace único:</p>
+                                <a href="?store=${encodeURIComponent(store.slug)}" target="_blank" class="text-indigo-600 font-bold text-sm underline break-all mt-1 inline-block">${window.location.origin}${window.location.pathname}?store=${encodeURIComponent(store.slug)}</a>
                             </div>
-
-                            <!-- FORMULARIO DE PRODUCTOS -->
                             <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
                                 <h3 class="font-bold text-lg mb-4">Añadir Producto a la Nube</h3>
                                 <form onsubmit="addProductCloud(event, '${storeId}')" class="space-y-4">
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre</label>
-                                            <input type="text" id="prod-name" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
-                                        </div>
-                                        <div>
-                                            <label class="block text-xs font-semibold text-slate-600 mb-1">Precio (${store.currency})</label>
-                                            <input type="number" id="prod-price" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
-                                        </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre</label>
+                                        <input type="text" id="prod-name" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
                                     </div>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label class="block text-xs font-semibold text-slate-600 mb-1">Stock</label>
-                                            <input type="number" id="prod-stock" class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
-                                        </div>
-                                        <div>
-                                            <label class="block text-xs font-semibold text-slate-600 mb-1">Foto (Archivo)</label>
-                                            <input type="file" id="prod-file" accept="image/*" class="w-full text-xs text-slate-500 file:py-2 file:px-3 file:rounded-xl file:border-0 file:font-semibold file:bg-indigo-50 file:text-indigo-700">
-                                        </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-600 mb-1">Precio (${store.currency})</label>
+                                        <input type="number" id="prod-price" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
                                     </div>
                                     <div>
                                         <label class="block text-xs font-semibold text-slate-600 mb-1">Descripción</label>
                                         <textarea id="prod-desc" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm h-20"></textarea>
                                     </div>
-                                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-2xl text-sm transition shadow-md">Guardar Producto en Firebase</button>
+                                    <button type="submit" class="bg-indigo-600 text-white font-semibold px-6 py-3 rounded-2xl text-sm">Guardar Producto en Firebase</button>
                                 </form>
                             </div>
                         `}
@@ -346,7 +277,6 @@
                 `;
             } catch (err) {
                 console.error(err);
-                container.innerHTML = `<div class="text-center py-20 text-rose-600">Error al cargar el panel de administración.</div>`;
             }
         }
 
@@ -358,79 +288,19 @@
             const currency = document.getElementById('new-store-currency').value;
             const slug = name.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-            try {
-                await addDoc(collection(db, "stores"), {
-                    ownerEmail: email,
-                    name,
-                    description,
-                    whatsapp,
-                    currency,
-                    slug,
-                    themeColor: 'indigo'
-                });
-                initializeAppRouter();
-            } catch (err) {
-                alert("Error al crear la tienda: " + err.message);
-            }
+            await addDoc(collection(db, "stores"), { ownerEmail: email, name, description, whatsapp, currency, slug });
+            initializeAppRouter();
         }
 
         window.addProductCloud = async function(e, storeId) {
             e.preventDefault();
             const name = document.getElementById('prod-name').value.trim();
             const price = document.getElementById('prod-price').value.trim();
-            const stock = document.getElementById('prod-stock').value.trim();
             const description = document.getElementById('prod-desc').value.trim();
-            const fileInput = document.getElementById('prod-file');
 
-            const saveToFirestore = async (imageUrl) => {
-                try {
-                    await addDoc(collection(db, "products"), {
-                        storeId,
-                        name,
-                        price,
-                        stock,
-                        description,
-                        image: imageUrl || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500'
-                    });
-                    alert("¡Producto guardado exitosamente en la nube!");
-                    initializeAppRouter();
-                } catch (err) {
-                    alert("Error al guardar producto: " + err.message);
-                }
-            };
-
-            if (fileInput.files && fileInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    saveToFirestore(e.target.result);
-                };
-                reader.readAsDataURL(fileInput.files[0]);
-            } else {
-                saveToFirestore('');
-            }
-        }
-
-        window.filterProductsLocal = function(products, currencySymbol) {
-            const queryText = document.getElementById('search-input').value.toLowerCase();
-            const filtered = products.filter(p => p.name.toLowerCase().includes(queryText));
-            const grid = document.getElementById('products-grid');
-            if(!grid) return;
-
-            grid.innerHTML = filtered.length === 0 ? '<div class="col-span-full text-center py-20"><p class="text-slate-400 text-lg font-medium">No se encontraron productos.</p></div>' : 
-                filtered.map(p => `
-                    <div class="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group">
-                        <div class="h-56 bg-slate-100 overflow-hidden cursor-pointer relative" onclick="openProductModalContent(${JSON.stringify(p).replace(/"/g, '&quot;')}, '${currencySymbol}')">
-                            <img src="${p.image}" alt="${p.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
-                        </div>
-                        <div class="p-5 flex flex-col flex-grow">
-                            <h3 class="font-bold text-lg text-slate-900 cursor-pointer hover:text-indigo-600 transition" onclick="openProductModalContent(${JSON.stringify(p).replace(/"/g, '&quot;')}, '${currencySymbol}')">${p.name}</h3>
-                            <p class="text-slate-500 text-sm mt-1.5 line-clamp-2 flex-grow">${p.description || 'Sin descripción.'}</p>
-                            <div class="mt-4 flex items-baseline justify-between">
-                                <span class="text-2xl font-black text-indigo-600">${currencySymbol} ${p.price}</span>
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
+            await addDoc(collection(db, "products"), { storeId, name, price, description, image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500' });
+            alert("¡Producto guardado en la nube!");
+            initializeAppRouter();
         }
 
         window.openProductModalContent = function(p, currencySymbol) {
