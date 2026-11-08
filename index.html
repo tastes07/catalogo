@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -42,7 +41,7 @@
       </div>
 
       <nav class="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
-        <button onclick="app.viewDemoStore()" class="hover:text-blue-600 transition-colors">Ver Tienda Demo</button>
+        <button onclick="app.viewDemoStore()" class="hover:text-blue-600 transition-colors">Ver Mi Tienda</button>
         <span id="nav-owner-links" class="hidden items-center gap-6">
           <button onclick="app.navigateHome()" class="hover:text-blue-600 transition-colors">Panel de Administración</button>
           <button onclick="app.viewMyPublicCatalog()" class="hover:text-blue-600 transition-colors flex items-center gap-1.5">
@@ -59,13 +58,146 @@
   <!-- Contenedor Principal de la Aplicación -->
   <div id="app-root" class="flex-1"></div>
 
+  <!-- Modal de Formulario de Producto (Añadir / Editar) -->
+  <div id="product-form-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full overflow-hidden border border-slate-100 my-8">
+      <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+        <div>
+          <h3 id="product-modal-title" class="text-base font-bold text-slate-900">Añadir Nuevo Producto</h3>
+          <p class="text-xs text-slate-500 mt-0.5">Completa los campos para publicar tu producto en el catálogo</p>
+        </div>
+        <button onclick="app.closeProductModal()" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- REQUISITO #2: FORMULARIO COMPLETO DE PRODUCTOS -->
+      <form id="product-form" onsubmit="app.handleSaveProductSubmit(event)" class="p-5 space-y-4">
+        <input type="hidden" id="form-product-id">
+
+        <!-- 1. Nombre del producto -->
+        <div>
+          <label class="block text-xs font-bold text-slate-800 mb-1">Nombre del Producto *</label>
+          <input type="text" id="form-name" required placeholder="Ej. Chaqueta Denim, Smartphone Pro 256GB, Hamburguesa Especial" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium">
+        </div>
+
+        <!-- 2. Precio, 3. Stock, 4. Descuento -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-800 mb-1">Precio ($) *</label>
+            <input type="number" id="form-price" step="0.01" min="0" required placeholder="0.00" oninput="app.updatePricePreview()" class="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-800 mb-1">Stock (Cantidad) *</label>
+            <input type="number" id="form-stock" min="0" required placeholder="10" class="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">Descuento (%) <span class="text-slate-400">Opcional</span></label>
+            <input type="number" id="form-discount" min="0" max="99" placeholder="0" oninput="app.updatePricePreview()" class="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono">
+          </div>
+        </div>
+
+        <!-- Cálculo automático en vivo -->
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between text-xs">
+          <div>
+            <span class="text-slate-500 block">Cálculo de Descuento:</span>
+            <span id="preview-discount-text" class="text-slate-500">Sin descuento aplicado</span>
+          </div>
+          <div class="text-right">
+            <span class="text-[11px] text-slate-500 block">Precio Final al Cliente</span>
+            <span id="preview-final-price" class="text-base font-extrabold text-blue-600 font-mono">$0.00</span>
+          </div>
+        </div>
+
+        <!-- 5. Descripción detallada del producto -->
+        <div>
+          <label class="block text-xs font-bold text-slate-800 mb-1">Descripción Detallada del Producto *</label>
+          <textarea id="form-desc" rows="3" required placeholder="Detalles del producto, especificaciones, medidas, materiales, modo de uso o cualquier información relevante para tus clientes..." class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
+        </div>
+
+        <!-- 6. URL o carga de imagen (Visual Photo Upload) -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-xs font-bold text-slate-800">Imagen del Producto (URL o Cargar Foto) *</label>
+            <span class="text-[10px] text-slate-400">Sube foto de tu equipo o pega URL</span>
+          </div>
+
+          <div class="space-y-2">
+            <div class="flex items-center gap-2">
+              <label class="flex-1 border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-xl p-3 text-center cursor-pointer hover:bg-blue-50/50 transition-colors flex items-center justify-center gap-2">
+                <i data-lucide="upload" class="w-4 h-4 text-blue-600"></i>
+                <span class="text-xs font-semibold text-slate-700">Subir foto desde tu dispositivo</span>
+                <input type="file" id="form-file-input" accept="image/*" onchange="app.handleFileSelect(event)" class="hidden">
+              </label>
+            </div>
+
+            <div class="flex gap-2 items-center">
+              <input type="text" id="form-image-url" placeholder="O pega enlace: https://ejemplo.com/foto.jpg" oninput="app.updateImagePreview(this.value)" class="flex-1 px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500">
+              <div id="image-preview-container" class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                <img id="form-image-preview" src="" alt="Preview" class="w-full h-full object-cover hidden">
+                <i id="form-image-placeholder" data-lucide="image" class="w-4 h-4 text-slate-400"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2.5 pt-3 border-t border-slate-100">
+          <button type="button" onclick="app.closeProductModal()" class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
+          <button type="submit" id="btn-save-product" class="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm">Guardar Producto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- REQUISITO #4: VISTA DETALLADA EXPANDIDA Y PEDIDO POR WHATSAPP -->
+  <div id="product-detail-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-100 my-8">
+      <div class="relative aspect-16/9 bg-slate-100 overflow-hidden">
+        <img id="detail-image" src="" alt="" class="w-full h-full object-cover">
+        <button onclick="app.closeProductDetailModal()" class="absolute top-3 right-3 p-2 bg-white/95 hover:bg-white text-slate-700 rounded-full shadow-md">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+        <div id="detail-badges" class="absolute bottom-3 left-3 flex gap-2"></div>
+      </div>
+
+      <div class="p-6 sm:p-8 space-y-6">
+        <div>
+          <h2 id="detail-name" class="text-2xl font-extrabold text-slate-900 tracking-tight"></h2>
+          <div class="mt-2 flex items-center gap-3 text-xs text-slate-500">
+            <span>Stock disponible: <strong id="detail-stock" class="text-slate-800"></strong></span>
+            <span>·</span>
+            <span id="detail-store-name"></span>
+          </div>
+        </div>
+
+        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Descripción Completa</h4>
+          <p id="detail-desc" class="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line"></p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-slate-100">
+          <div>
+            <span class="text-xs text-slate-500 block">Precio Actual:</span>
+            <div class="flex items-baseline gap-2 mt-0.5">
+              <span id="detail-original-price" class="text-sm text-slate-400 line-through tabular-nums hidden"></span>
+              <span id="detail-final-price" class="text-3xl font-extrabold text-slate-900 tabular-nums"></span>
+            </div>
+            <span id="detail-savings" class="text-xs text-emerald-700 font-semibold block mt-0.5 hidden"></span>
+          </div>
+
+          <div id="detail-action-container"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal de Autenticación -->
   <div id="auth-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
     <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-100">
       <div class="p-6 border-b border-slate-100 flex items-center justify-between">
         <div>
           <h3 id="auth-modal-title" class="text-xl font-bold text-slate-900">Iniciar Sesión</h3>
-          <p id="auth-modal-desc" class="text-xs text-slate-500 mt-0.5">Accede a tu panel para gestionar tus productos y pedidos</p>
+          <p id="auth-modal-desc" class="text-xs text-slate-500 mt-0.5">Accede a tu panel para gestionar tus productos</p>
         </div>
         <button onclick="app.closeAuthModal()" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100">
           <i data-lucide="x" class="w-5 h-5"></i>
@@ -74,58 +206,46 @@
 
       <div class="px-6 pt-4 pb-2">
         <div class="flex rounded-lg bg-slate-100 p-1">
-          <button id="auth-tab-login" onclick="app.setAuthMode('login')" class="flex-1 py-1.5 text-xs font-semibold rounded-md bg-white text-slate-900 shadow-sm">
-            Ya tengo cuenta
-          </button>
-          <button id="auth-tab-register" onclick="app.setAuthMode('register')" class="flex-1 py-1.5 text-xs font-semibold rounded-md text-slate-600 hover:text-slate-900">
-            Nuevo registro ($30 USD)
-          </button>
+          <button id="auth-tab-login" onclick="app.setAuthMode('login')" class="flex-1 py-1.5 text-xs font-semibold rounded-md bg-white text-slate-900 shadow-sm">Ya tengo cuenta</button>
+          <button id="auth-tab-register" onclick="app.setAuthMode('register')" class="flex-1 py-1.5 text-xs font-semibold rounded-md text-slate-600 hover:text-slate-900">Nuevo registro ($30 USD)</button>
         </div>
       </div>
 
-      <div id="auth-dynamic-notice" class="mx-6 my-2"></div>
       <div id="auth-error-box" class="mx-6 my-2 hidden p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700"></div>
 
-      <form id="auth-form" onsubmit="app.handleAuthSubmit(event)" class="p-6 space-y-3.5">
+      <form onsubmit="app.handleAuthSubmit(event)" class="p-6 space-y-3.5">
         <div id="register-fields" class="space-y-3.5 hidden">
           <div>
             <label class="block text-xs font-medium text-slate-700 mb-1">Nombre de tu Tienda o Negocio</label>
-            <input type="text" id="auth-store-name" placeholder="Ej. Boutique Urbana, TecnoStore, Burger House" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <input type="text" id="auth-store-name" placeholder="Ej. Mi Tienda Exclusiva" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500">
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-900 mb-1">Número de Teléfono de WhatsApp (con código de país) *</label>
-            <input type="tel" id="auth-whatsapp" placeholder="Ej. +52 1 55 1234 5678 o +34 612 345 678" class="w-full px-3 py-2 text-sm bg-emerald-50/50 border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono">
-            <p class="text-[11px] text-slate-500 mt-0.5">Tus clientes usarán este número para enviar pedidos directos desde el catálogo.</p>
+            <input type="tel" id="auth-whatsapp" placeholder="Ej. +52 1 55 1234 5678" class="w-full px-3 py-2 text-sm bg-emerald-50/50 border border-emerald-300 rounded-lg font-mono focus:ring-2 focus:ring-emerald-500">
           </div>
         </div>
 
         <div>
           <label class="block text-xs font-medium text-slate-700 mb-1">Correo Electrónico</label>
-          <input type="email" id="auth-email" required placeholder="tu@email.com" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <input type="email" id="auth-email" required placeholder="tu@email.com" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500">
         </div>
 
         <div>
           <label class="block text-xs font-medium text-slate-700 mb-1">Contraseña</label>
-          <input type="password" id="auth-password" required placeholder="••••••••" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <input type="password" id="auth-password" required placeholder="••••••••" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500">
         </div>
 
-        <button type="submit" id="auth-submit-btn" class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 text-sm">
+        <button type="submit" id="auth-submit-btn" class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm text-sm">
           <span>Entrar al Panel</span>
         </button>
       </form>
 
       <div class="px-6 pb-6 pt-1 border-t border-slate-100 bg-slate-50/70">
         <p class="text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-2">Accesos Rápidos de Prueba</p>
-        <div class="space-y-1.5">
-          <button onclick="app.quickLogin('tastess07@gmail.com')" class="w-full py-2 px-3 text-xs bg-white hover:bg-amber-50/80 border border-slate-200 hover:border-amber-300 rounded-lg text-slate-700 flex items-center justify-between">
-            <span class="font-semibold text-slate-900">tastess07@gmail.com (VIP Maestro - Exento de Pago)</span>
-            <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
-          </button>
-          <button onclick="app.quickLogin('demo@catalogoexclusivo.com')" class="w-full py-2 px-3 text-xs bg-white hover:bg-blue-50/80 border border-slate-200 hover:border-blue-300 rounded-lg text-slate-700 flex items-center justify-between">
-            <span class="font-medium text-slate-900">demo@catalogoexclusivo.com (Tienda Multirubro Demo)</span>
-            <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
-          </button>
-        </div>
+        <button onclick="app.quickLogin('tastess07@gmail.com')" class="w-full py-2 px-3 text-xs bg-white hover:bg-amber-50 border border-slate-200 rounded-lg text-slate-700 flex items-center justify-between mb-1.5">
+          <span class="font-semibold text-slate-900">tastess07@gmail.com (VIP Maestro - Exento de Pago)</span>
+          <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
+        </button>
       </div>
     </div>
   </div>
@@ -135,10 +255,10 @@
     const PAYPAL_SUBSCRIPTION_URL = 'https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-5M364683CW0430404NLTVTNQ';
     const SUBSCRIPTION_PRICE_USD = 30;
 
-    const USERS_KEY = 'ce_users_v2';
-    const STORES_KEY = 'ce_stores_v2';
-    const PRODUCTS_KEY = 'ce_products_v2';
-    const SESSION_KEY = 'ce_session_v2';
+    const USERS_KEY = 'ce_users_v5';
+    const STORES_KEY = 'ce_stores_v5';
+    const PRODUCTS_KEY = 'ce_products_v5';
+    const SESSION_KEY = 'ce_session_v5';
 
     function calculateFinalPrice(originalPrice, discountPercent) {
       const price = Math.max(0, Number(originalPrice) || 0);
@@ -149,7 +269,7 @@
       return Math.round(price * 100) / 100;
     }
 
-    // Generador de enlace de WhatsApp con formato exacto:
+    // Formateo dinámico exacto de enlace de WhatsApp:
     // "Hola, quiero pedir este producto: [Nombre del producto], Precio: [Precio]"
     function formatWhatsappUrl(phone, productName, priceText) {
       const cleanPhone = (phone || '').replace(/[^0-9]/g, '');
@@ -179,6 +299,7 @@
         window.addEventListener('popstate', () => this.handleUrlRouting());
       }
 
+      // REQUISITO 1: CATÁLOGO TOTALMENTE VACÍO AL INICIAR
       seedInitialData() {
         if (!localStorage.getItem(USERS_KEY)) {
           const vipUser = {
@@ -186,115 +307,27 @@
             email: VIP_EMAIL,
             subscriptionStatus: 'active',
             isVipExempt: true,
-            storeId: 'nova-store',
-          };
-          const demoUser = {
-            id: 'usr_demo',
-            email: 'demo@catalogoexclusivo.com',
-            subscriptionStatus: 'active',
-            isVipExempt: false,
-            storeId: 'tienda-demo',
+            storeId: 'mi-tienda-oficial',
           };
           localStorage.setItem(USERS_KEY, JSON.stringify({
             [VIP_EMAIL.toLowerCase()]: vipUser,
-            ['demo@catalogoexclusivo.com']: demoUser,
           }));
 
           const stores = {
-            'nova-store': {
-              id: 'nova-store',
+            'mi-tienda-oficial': {
+              id: 'mi-tienda-oficial',
               ownerEmail: VIP_EMAIL,
-              name: 'Nova Store & Boutique',
-              description: 'Catálogo oficial con lo último en celulares, tecnología, moda de temporada y accesorios premium.',
-              whatsapp: '+52 55 8765 4321', // Teléfono WhatsApp obligatorio
-              currency: '$ USD',
-            },
-            'tienda-demo': {
-              id: 'tienda-demo',
-              ownerEmail: 'demo@catalogoexclusivo.com',
-              name: 'Boutique & Market Express',
-              description: 'Moda urbana, gadgets, café gourmet y artículos para el hogar con pedidos directos a WhatsApp.',
-              whatsapp: '+52 55 1234 5678', // Teléfono WhatsApp obligatorio
+              name: 'Mi Tienda Oficial',
+              description: 'Bienvenido a nuestro catálogo exclusivo en línea. Haz tus pedidos directamente a nuestro WhatsApp.',
+              whatsapp: '+52 55 1234 5678',
               currency: '$ USD',
             }
           };
           localStorage.setItem(STORES_KEY, JSON.stringify(stores));
 
-          const products = [
-            {
-              id: 'p1',
-              storeId: 'nova-store',
-              name: 'Auriculares Inalámbricos Pro Noise Cancelling',
-              description: 'Cancelación activa de ruido híbrida, 30 horas de batería y sonido estéreo Hi-Res.',
-              imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80',
-              category: 'Tecnología',
-              originalPrice: 120,
-              discountPercent: 15,
-              finalPrice: calculateFinalPrice(120, 15),
-              stock: 14,
-            },
-            {
-              id: 'p2',
-              storeId: 'nova-store',
-              name: 'Smartphone Pro Max 256GB Dual SIM',
-              description: 'Pantalla AMOLED 120Hz, cámara triple de 108MP con ultra zoom nocturno y carga rápida 65W.',
-              imageUrl: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=800&q=80',
-              category: 'Celulares',
-              originalPrice: 899,
-              discountPercent: 10,
-              finalPrice: calculateFinalPrice(899, 10),
-              stock: 5,
-            },
-            {
-              id: 'p3',
-              storeId: 'nova-store',
-              name: 'Chaqueta Denim Vintage Unisex',
-              description: 'Denim de algodón puro lavado con botones reforzados y corte moderno atemporal.',
-              imageUrl: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=800&q=80',
-              category: 'Ropa y Moda',
-              originalPrice: 75,
-              discountPercent: 0,
-              finalPrice: 75,
-              stock: 9,
-            },
-            {
-              id: 'p4',
-              storeId: 'nova-store',
-              name: 'Zapatillas Deportivas Urban Runner',
-              description: 'Amortiguación ergonómica y malla transpirable para uso diario.',
-              imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80',
-              category: 'Calzado',
-              originalPrice: 89,
-              discountPercent: 20,
-              finalPrice: calculateFinalPrice(89, 20),
-              stock: 0, // Agotado
-            },
-            {
-              id: 'p5',
-              storeId: 'nova-store',
-              name: 'Café de Especialidad Grano Entero 500g',
-              description: 'Tostado artesanal con notas aromáticas de caramelo, chocolate y avellana.',
-              imageUrl: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&w=800&q=80',
-              category: 'Comida y Gourmet',
-              originalPrice: 18,
-              discountPercent: 0,
-              finalPrice: 18,
-              stock: 22,
-            },
-            {
-              id: 'p6',
-              storeId: 'nova-store',
-              name: 'Reloj Cronógrafo Elegante en Cuero',
-              description: 'Cristal de zafiro anti-rayaduras y correa de cuero genuino italiano.',
-              imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80',
-              category: 'Accesorios',
-              originalPrice: 140,
-              discountPercent: 25,
-              finalPrice: calculateFinalPrice(140, 25),
-              stock: 4,
-            }
-          ];
-          localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
+          // REQUISITO 1: Vacío [] para empezar a cargar productos propios
+          const initialProducts = [];
+          localStorage.setItem(PRODUCTS_KEY, JSON.stringify(initialProducts));
         }
       }
 
@@ -400,7 +433,7 @@
                   <div class="space-y-6">
                     <div class="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 border border-blue-200 rounded-full text-xs font-semibold text-blue-700">
                       <i data-lucide="store" class="w-3.5 h-3.5"></i>
-                      <span>SaaS de Catálogos Online para Cualquier Negocio</span>
+                      <span>SaaS de Catálogos Online para Cualquier Tienda</span>
                     </div>
 
                     <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900 leading-tight">
@@ -408,7 +441,7 @@
                     </h1>
 
                     <p class="text-base text-slate-600 leading-relaxed max-w-xl">
-                      Para ropa, comida, celulares, tecnología o cualquier negocio. Publica tus productos, gestiona stock y recibe pedidos automáticos prellenados en tu WhatsApp.
+                      Para ropa, comida, celulares, tecnología, accesorios o cualquier negocio. Tu catálogo empieza completamente limpio y listo para tus propios artículos.
                     </p>
 
                     <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
@@ -418,13 +451,13 @@
                       </button>
                       <button onclick="app.viewDemoStore()" class="px-5 py-3.5 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center justify-center gap-2">
                         <i data-lucide="store" class="w-4 h-4 text-slate-600"></i>
-                        <span>Ver Tienda Demo</span>
+                        <span>Ver Mi Tienda</span>
                       </button>
                     </div>
 
                     <div class="pt-4 flex flex-wrap items-center gap-6 text-xs text-slate-500 border-t border-slate-100">
                       <span class="flex items-center gap-1.5"><i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i> Pagos seguros vía PayPal ($30/mes)</span>
-                      <span class="flex items-center gap-1.5"><i data-lucide="check" class="w-4 h-4 text-blue-600"></i> Compatible con celulares y PC</span>
+                      <span class="flex items-center gap-1.5"><i data-lucide="check" class="w-4 h-4 text-blue-600"></i> Catálogo vacío listo para tus artículos</span>
                       <span class="flex items-center gap-1.5 text-amber-700 font-medium"><i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i> VIP Maestro: ${VIP_EMAIL}</span>
                     </div>
                   </div>
@@ -487,62 +520,79 @@
             </section>
 
             <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                ${products.map(p => {
-                  const isOutOfStock = p.stock <= 0;
-                  const hasDiscount = (p.discountPercent || 0) > 0;
-                  const priceText = `$${p.finalPrice.toFixed(2)} ${store.currency || '$ USD'}`;
-                  const orderUrl = formatWhatsappUrl(store.whatsapp, p.name, priceText);
+              ${products.length === 0 ? `
+                <div class="bg-white rounded-2xl p-16 text-center border border-slate-200 max-w-lg mx-auto my-8">
+                  <div class="w-16 h-16 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+                    <i data-lucide="shopping-bag" class="w-8 h-8"></i>
+                  </div>
+                  <h3 class="text-lg font-bold text-slate-800">Catálogo en Preparación</h3>
+                  <p class="text-xs text-slate-500 mt-2 leading-relaxed">
+                    Esta tienda aún no ha añadido productos a su catálogo público. Vuelve pronto para descubrir nuestras novedades.
+                  </p>
+                </div>
+              ` : `
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  ${products.map(p => {
+                    const isOutOfStock = p.stock <= 0;
+                    const hasDiscount = (p.discountPercent || 0) > 0;
+                    const priceText = `$${p.finalPrice.toFixed(2)} ${store.currency || '$ USD'}`;
+                    const orderUrl = formatWhatsappUrl(store.whatsapp, p.name, priceText);
 
-                  return `
-                    <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden flex flex-col justify-between hover:shadow-lg transition-all ${isOutOfStock ? 'opacity-80' : ''}">
-                      <div>
-                        <div class="relative aspect-4/3 bg-slate-100 overflow-hidden">
-                          <img src="${p.imageUrl}" alt="${p.name}" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80'">
-                          <div class="absolute top-2.5 left-2.5 flex flex-col gap-1 items-start">
-                            ${isOutOfStock ? `
-                              <span class="px-2.5 py-1 text-xs font-extrabold bg-red-600 text-white rounded-md shadow-md">¡AGOTADO! (0 en stock)</span>
-                            ` : `
-                              <span class="px-2 py-0.5 text-[11px] font-medium bg-emerald-600 text-white rounded-md shadow-sm">${p.stock} en stock</span>
-                            `}
-                            ${hasDiscount ? `
-                              <span class="px-2 py-0.5 text-[11px] font-bold bg-blue-600 text-white rounded-md shadow-sm">-${p.discountPercent}% OFF</span>
-                            ` : ''}
+                    return `
+                      <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden flex flex-col justify-between hover:shadow-lg transition-all ${isOutOfStock ? 'opacity-80' : ''}">
+                        <div>
+                          <!-- REQUISITO #4: Vista detallada al hacer clic -->
+                          <div onclick="app.openProductDetailModal('${p.id}')" class="relative aspect-4/3 bg-slate-100 overflow-hidden cursor-pointer group" title="Haz clic para ver detalles completos">
+                            <img src="${p.imageUrl}" alt="${p.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80'">
+                            <div class="absolute top-2.5 left-2.5 flex flex-col gap-1 items-start">
+                              ${isOutOfStock ? `
+                                <span class="px-2.5 py-1 text-xs font-extrabold bg-red-600 text-white rounded-md shadow-md">¡AGOTADO! (0 en stock)</span>
+                              ` : `
+                                <span class="px-2 py-0.5 text-[11px] font-medium bg-emerald-600 text-white rounded-md shadow-sm">${p.stock} en stock</span>
+                              `}
+                              ${hasDiscount ? `
+                                <span class="px-2 py-0.5 text-[11px] font-bold bg-blue-600 text-white rounded-md shadow-sm">-${p.discountPercent}% OFF</span>
+                              ` : ''}
+                            </div>
+                            <div class="absolute inset-0 bg-slate-900/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                              <span class="bg-white/95 text-slate-900 font-bold text-[11px] px-3 py-1 rounded-full shadow">Ver Detalle Completo</span>
+                            </div>
+                          </div>
+
+                          <div class="p-5">
+                            <h3 onclick="app.openProductDetailModal('${p.id}')" class="text-base font-bold text-slate-900 line-clamp-1 cursor-pointer hover:text-blue-600 transition-colors">${p.name}</h3>
+                            <p class="text-xs text-slate-600 line-clamp-2 mt-1.5">${p.description}</p>
                           </div>
                         </div>
-                        <div class="p-5">
-                          <p class="text-[11px] font-semibold uppercase text-slate-400 mb-1">${p.category}</p>
-                          <h3 class="text-base font-bold text-slate-900 line-clamp-1">${p.name}</h3>
-                          <p class="text-xs text-slate-600 line-clamp-2 mt-1.5">${p.description}</p>
-                        </div>
-                      </div>
 
-                      <div class="p-5 pt-0">
-                        <div class="pt-3 border-t border-slate-100 mb-4 flex items-baseline justify-between">
-                          <div>
-                            ${hasDiscount ? `
-                              <span class="text-xs text-slate-400 line-through tabular-nums">$${p.originalPrice.toFixed(2)}</span>
-                            ` : ''}
-                            <span class="text-xl font-extrabold text-slate-900 tabular-nums">$${p.finalPrice.toFixed(2)} <span class="text-xs font-normal text-slate-500">${store.currency || '$ USD'}</span></span>
+                        <div class="p-5 pt-0">
+                          <div class="pt-3 border-t border-slate-100 mb-4 flex items-baseline justify-between">
+                            <div>
+                              ${hasDiscount ? `
+                                <span class="text-xs text-slate-400 line-through tabular-nums">$${p.originalPrice.toFixed(2)}</span>
+                              ` : ''}
+                              <span class="text-xl font-extrabold text-slate-900 tabular-nums">$${p.finalPrice.toFixed(2)} <span class="text-xs font-normal text-slate-500">${store.currency || '$ USD'}</span></span>
+                            </div>
                           </div>
-                        </div>
 
-                        ${isOutOfStock ? `
-                          <button disabled class="w-full py-2.5 px-3 bg-slate-100 text-slate-400 font-semibold rounded-xl text-xs flex items-center justify-center gap-2 cursor-not-allowed">
-                            <i data-lucide="alert-circle" class="w-4 h-4"></i>
-                            <span>Agotado temporalmente</span>
-                          </button>
-                        ` : `
-                          <a href="${orderUrl}" target="_blank" rel="noopener noreferrer" class="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm transition-all flex items-center justify-center gap-2">
-                            <i data-lucide="message-circle" class="w-4 h-4"></i>
-                            <span>Pedir por WhatsApp</span>
-                          </a>
-                        `}
+                          <!-- REQUISITO #4: Botón de Pedir por WhatsApp -->
+                          ${isOutOfStock ? `
+                            <button disabled class="w-full py-2.5 px-3 bg-slate-100 text-slate-400 font-semibold rounded-xl text-xs flex items-center justify-center gap-2 cursor-not-allowed">
+                              <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                              <span>Agotado temporalmente</span>
+                            </button>
+                          ` : `
+                            <a href="${orderUrl}" target="_blank" rel="noopener noreferrer" class="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm transition-all flex items-center justify-center gap-2">
+                              <i data-lucide="message-circle" class="w-4 h-4"></i>
+                              <span>Pedir por WhatsApp</span>
+                            </a>
+                          `}
+                        </div>
                       </div>
-                    </div>
-                  `;
-                }).join('')}
-              </div>
+                    `;
+                  }).join('')}
+                </div>
+              `}
             </main>
           </div>
         `;
@@ -579,7 +629,7 @@
                         <span class="text-xs font-bold uppercase text-emerald-950">Número de Teléfono de WhatsApp (con código de país) *</span>
                         <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-200 text-emerald-800">Requerido</span>
                       </div>
-                      <p class="text-xs text-emerald-800 mt-0.5">Cada botón 'Pedir por WhatsApp' abrirá una conversación a este número con el pedido prellenado.</p>
+                      <p class="text-xs text-emerald-800 mt-0.5">Tus clientes usarán este número para enviarte pedidos desde el catálogo.</p>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
                       <input type="tel" id="admin-whatsapp-input" required value="${store.whatsapp || ''}" placeholder="Ej. +52 1 55 1234 5678" class="w-60 px-3 py-1.5 text-xs bg-white border border-emerald-300 rounded-lg font-mono focus:ring-2 focus:ring-emerald-500">
@@ -599,39 +649,68 @@
                   </button>
                 </div>
 
-                <!-- Gestión de Productos -->
+                <!-- REQUISITO #2: BOTÓN PARA AÑADIR PRODUCTO -->
                 <div class="pt-4 flex items-center justify-between">
                   <h2 class="text-lg font-bold text-slate-900">Productos (${products.length})</h2>
-                  <button onclick="app.openNewProductPrompt()" class="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center gap-1.5">
+                  <button onclick="app.openAddProductModal()" class="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center gap-1.5 shadow-sm">
                     <i data-lucide="plus" class="w-4 h-4"></i>
                     <span>Añadir Producto</span>
                   </button>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  ${products.map(p => {
-                    const priceText = `$${p.finalPrice.toFixed(2)} ${store.currency || '$ USD'}`;
-                    const whatsappUrl = formatWhatsappUrl(store.whatsapp, p.name, priceText);
-                    return `
-                      <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col justify-between">
-                        <div class="flex gap-3">
-                          <img src="${p.imageUrl}" alt="${p.name}" class="w-14 h-14 rounded-lg object-cover bg-white" onerror="this.src='https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80'">
-                          <div>
-                            <span class="text-[10px] text-slate-500 uppercase font-semibold">${p.category}</span>
-                            <h4 class="text-sm font-bold text-slate-900 line-clamp-1">${p.name}</h4>
-                            <p class="text-xs font-mono font-bold text-slate-800">$${p.finalPrice.toFixed(2)} <span class="font-normal text-slate-500">(Stock: ${p.stock})</span></p>
+                <!-- REQUISITO #1: CATÁLOGO VACÍO AL INICIAR -->
+                ${products.length === 0 ? `
+                  <div class="p-12 text-center border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
+                    <div class="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-3">
+                      <i data-lucide="package-plus" class="w-7 h-7"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-slate-800">Tu catálogo de productos está vacío</h3>
+                    <p class="text-xs text-slate-500 mt-1 mb-5 max-w-sm mx-auto">
+                      Comienza añadiendo tus propios artículos con foto, precio, descripción y cantidad en stock disponible.
+                    </p>
+                    <button onclick="app.openAddProductModal()" class="px-5 py-2.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md inline-flex items-center gap-2">
+                      <i data-lucide="plus" class="w-4 h-4"></i>
+                      <span>Añadir Mi Primer Producto</span>
+                    </button>
+                  </div>
+                ` : `
+                  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    ${products.map(p => {
+                      const priceText = `$${p.finalPrice.toFixed(2)} ${store.currency || '$ USD'}`;
+                      const whatsappUrl = formatWhatsappUrl(store.whatsapp, p.name, priceText);
+
+                      return `
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col justify-between">
+                          <div class="flex gap-3">
+                            <img src="${p.imageUrl}" alt="${p.name}" class="w-16 h-16 rounded-lg object-cover bg-white shrink-0 border border-slate-200" onerror="this.src='https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80'">
+                            <div class="min-w-0">
+                              <h4 class="text-sm font-bold text-slate-900 line-clamp-1">${p.name}</h4>
+                              <p class="text-xs font-mono font-bold text-slate-800 mt-0.5">$${p.finalPrice.toFixed(2)} <span class="font-normal text-slate-500">(Stock: ${p.stock})</span></p>
+                              <p class="text-[11px] text-slate-500 line-clamp-1 mt-1">${p.description}</p>
+                            </div>
+                          </div>
+
+                          <!-- REQUISITO #3: BOTONES VISIBLES DE EDITAR Y ELIMINAR -->
+                          <div class="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2">
+                              <button onclick="app.openEditProductModal('${p.id}')" class="px-3 py-1.5 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg flex items-center gap-1 border border-blue-200">
+                                <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                                <span>Editar</span>
+                              </button>
+                              <button onclick="app.deleteProduct('${p.id}')" class="px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg flex items-center gap-1 border border-red-200">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                <span>Eliminar</span>
+                              </button>
+                            </div>
+                            <a href="${whatsappUrl}" target="_blank" class="text-[11px] text-emerald-700 hover:underline flex items-center gap-1 font-semibold">
+                              <i data-lucide="message-circle" class="w-3.5 h-3.5"></i> Probar
+                            </a>
                           </div>
                         </div>
-                        <div class="mt-3 pt-3 border-t border-slate-200 flex items-center justify-between gap-2">
-                          <a href="${whatsappUrl}" target="_blank" class="text-[11px] text-emerald-700 font-semibold flex items-center gap-1 hover:underline">
-                            <i data-lucide="message-circle" class="w-3.5 h-3.5"></i> Probar WhatsApp
-                          </a>
-                          <button onclick="app.deleteProduct('${p.id}')" class="text-xs text-red-600 hover:underline">Eliminar</button>
-                        </div>
-                      </div>
-                    `;
-                  }).join('')}
-                </div>
+                      `;
+                    }).join('')}
+                  </div>
+                `}
               </div>
             </div>
           </div>
@@ -657,6 +736,234 @@
             </div>
           </div>
         `;
+      }
+
+      // REQUISITO #2: ABRIR FORMULARIO COMPLETO PARA AÑADIR PRODUCTO
+      openAddProductModal() {
+        document.getElementById('form-product-id').value = '';
+        document.getElementById('product-modal-title').textContent = 'Añadir Nuevo Producto al Catálogo';
+        document.getElementById('form-name').value = '';
+        document.getElementById('form-price').value = '';
+        document.getElementById('form-stock').value = '10';
+        document.getElementById('form-discount').value = '0';
+        document.getElementById('form-desc').value = '';
+        document.getElementById('form-image-url').value = '';
+        document.getElementById('btn-save-product').textContent = 'Añadir al Catálogo';
+        this.updateImagePreview('');
+        this.updatePricePreview();
+
+        const modal = document.getElementById('product-form-modal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        if (window.lucide) lucide.createIcons();
+      }
+
+      // REQUISITO #3: ABRIR FORMULARIO COMPLETO PARA EDITAR PRODUCTO
+      openEditProductModal(productId) {
+        const products = JSON.parse(localStorage.getItem(PRODUCTS_KEY) || '[]');
+        const p = products.find(item => item.id === productId);
+        if (!p) return;
+
+        document.getElementById('form-product-id').value = p.id;
+        document.getElementById('product-modal-title').textContent = 'Editar Producto';
+        document.getElementById('form-name').value = p.name;
+        document.getElementById('form-price').value = p.originalPrice;
+        document.getElementById('form-stock').value = p.stock;
+        document.getElementById('form-discount').value = p.discountPercent || 0;
+        document.getElementById('form-desc').value = p.description;
+        document.getElementById('form-image-url').value = p.imageUrl || '';
+        document.getElementById('btn-save-product').textContent = 'Guardar Cambios';
+        this.updateImagePreview(p.imageUrl || '');
+        this.updatePricePreview();
+
+        const modal = document.getElementById('product-form-modal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        if (window.lucide) lucide.createIcons();
+      }
+
+      closeProductModal() {
+        const modal = document.getElementById('product-form-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+
+      handleFileSelect(e) {
+        const file = e.target.files?.[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const dataUrl = event.target?.result;
+            document.getElementById('form-image-url').value = dataUrl;
+            this.updateImagePreview(dataUrl);
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+
+      updateImagePreview(url) {
+        const preview = document.getElementById('form-image-preview');
+        const placeholder = document.getElementById('form-image-placeholder');
+        if (url) {
+          preview.src = url;
+          preview.classList.remove('hidden');
+          placeholder.classList.add('hidden');
+        } else {
+          preview.src = '';
+          preview.classList.add('hidden');
+          placeholder.classList.remove('hidden');
+        }
+      }
+
+      updatePricePreview() {
+        const price = parseFloat(document.getElementById('form-price').value) || 0;
+        const discount = parseInt(document.getElementById('form-discount').value, 10) || 0;
+        const finalPrice = calculateFinalPrice(price, discount);
+
+        const discountText = document.getElementById('preview-discount-text');
+        const finalPriceText = document.getElementById('preview-final-price');
+
+        if (discount > 0) {
+          discountText.textContent = `Descuento activo: -${discount}%`;
+          discountText.className = 'text-emerald-700 font-semibold';
+        } else {
+          discountText.textContent = 'Sin descuento aplicado';
+          discountText.className = 'text-slate-500';
+        }
+        finalPriceText.textContent = `$${finalPrice.toFixed(2)}`;
+      }
+
+      // Guardar cambios o crear producto
+      handleSaveProductSubmit(e) {
+        e.preventDefault();
+        const id = document.getElementById('form-product-id').value;
+        const name = document.getElementById('form-name').value.trim();
+        const price = parseFloat(document.getElementById('form-price').value) || 0;
+        const stock = parseInt(document.getElementById('form-stock').value, 10) || 0;
+        const discount = parseInt(document.getElementById('form-discount').value, 10) || 0;
+        const description = document.getElementById('form-desc').value.trim();
+        const imageUrl = document.getElementById('form-image-url').value.trim() || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80';
+
+        const finalPrice = calculateFinalPrice(price, discount);
+        let products = JSON.parse(localStorage.getItem(PRODUCTS_KEY) || '[]');
+
+        if (id) {
+          // Actualización de producto existente (Requisito #3)
+          products = products.map(p => {
+            if (p.id === id) {
+              return {
+                ...p,
+                name,
+                originalPrice: price,
+                finalPrice,
+                stock,
+                discountPercent: discount,
+                description,
+                imageUrl,
+              };
+            }
+            return p;
+          });
+        } else {
+          // Creación de nuevo producto (Requisito #2)
+          const newProduct = {
+            id: 'p_' + Date.now(),
+            storeId: this.activeStore.id,
+            name,
+            originalPrice: price,
+            finalPrice,
+            stock,
+            discountPercent: discount,
+            description,
+            imageUrl,
+            category: 'General',
+          };
+          products.unshift(newProduct);
+        }
+
+        localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
+        this.closeProductModal();
+        this.render();
+      }
+
+      // REQUISITO #3: ELIMINAR PRODUCTO
+      deleteProduct(id) {
+        if (confirm('¿Estás seguro de que deseas eliminar este producto de tu catálogo?')) {
+          let products = JSON.parse(localStorage.getItem(PRODUCTS_KEY) || '[]');
+          products = products.filter(p => p.id !== id);
+          localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
+          this.render();
+        }
+      }
+
+      // REQUISITO #4: ABRIR VISTA DETALLADA EN CATÁLOGO PÚBLICO
+      openProductDetailModal(productId) {
+        const products = JSON.parse(localStorage.getItem(PRODUCTS_KEY) || '[]');
+        const p = products.find(item => item.id === productId);
+        if (!p) return;
+
+        document.getElementById('detail-image').src = p.imageUrl;
+        document.getElementById('detail-name').textContent = p.name;
+        document.getElementById('detail-desc').textContent = p.description;
+        document.getElementById('detail-stock').textContent = `${p.stock} unidades`;
+        document.getElementById('detail-store-name').textContent = `Tienda: ${this.activeStore.name}`;
+
+        const isOutOfStock = p.stock <= 0;
+        const hasDiscount = (p.discountPercent || 0) > 0;
+        const priceText = `$${p.finalPrice.toFixed(2)} ${this.activeStore.currency || '$ USD'}`;
+        const orderUrl = formatWhatsappUrl(this.activeStore.whatsapp, p.name, priceText);
+
+        const badgesContainer = document.getElementById('detail-badges');
+        badgesContainer.innerHTML = isOutOfStock
+          ? `<span class="px-3 py-1 bg-red-600 text-white font-bold text-xs uppercase rounded-lg shadow">¡AGOTADO! (0 en stock)</span>`
+          : `<span class="px-3 py-1 bg-emerald-600 text-white font-bold text-xs rounded-lg shadow">${p.stock} en stock</span>`;
+
+        if (hasDiscount) {
+          badgesContainer.innerHTML += `<span class="px-3 py-1 bg-blue-600 text-white font-bold text-xs rounded-lg shadow">-${p.discountPercent}% OFF</span>`;
+        }
+
+        const origPriceEl = document.getElementById('detail-original-price');
+        const finalPriceEl = document.getElementById('detail-final-price');
+        const savingsEl = document.getElementById('detail-savings');
+
+        finalPriceEl.textContent = priceText;
+        if (hasDiscount) {
+          origPriceEl.textContent = `$${p.originalPrice.toFixed(2)}`;
+          origPriceEl.classList.remove('hidden');
+          savingsEl.textContent = `Ahorras $${(p.originalPrice - p.finalPrice).toFixed(2)} (-${p.discountPercent}%)`;
+          savingsEl.classList.remove('hidden');
+        } else {
+          origPriceEl.classList.add('hidden');
+          savingsEl.classList.add('hidden');
+        }
+
+        const actionContainer = document.getElementById('detail-action-container');
+        if (isOutOfStock) {
+          actionContainer.innerHTML = `
+            <span class="px-5 py-3 bg-red-100 text-red-700 font-bold text-xs rounded-xl flex items-center gap-2">
+              <i data-lucide="alert-circle" class="w-4 h-4"></i>
+              <span>Producto no disponible por falta de stock</span>
+            </span>
+          `;
+        } else {
+          actionContainer.innerHTML = `
+            <a href="${orderUrl}" target="_blank" rel="noopener noreferrer" class="px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm shadow-md transition-all flex items-center justify-center gap-2.5">
+              <i data-lucide="message-circle" class="w-5 h-5"></i>
+              <span>Pedir por WhatsApp</span>
+            </a>
+          `;
+        }
+
+        const modal = document.getElementById('product-detail-modal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        if (window.lucide) lucide.createIcons();
+      }
+
+      closeProductDetailModal() {
+        const modal = document.getElementById('product-detail-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
       }
 
       openAuthModal(mode = 'login') {
@@ -763,7 +1070,7 @@
                 password,
                 subscriptionStatus: 'active',
                 isVipExempt: true,
-                storeId: 'nova-store',
+                storeId: 'mi-tienda-oficial',
               };
               users[email.toLowerCase()] = vipUser;
               localStorage.setItem(USERS_KEY, JSON.stringify(users));
@@ -844,45 +1151,11 @@
       }
 
       viewDemoStore() {
-        window.location.search = '?store=nova-store';
+        window.location.search = '?store=mi-tienda-oficial';
       }
 
       navigateHome() {
         window.location.search = '';
-      }
-
-      openNewProductPrompt() {
-        const name = prompt('Nombre del producto (ej. Smartphone 128GB, Vestido Elegante, Combo Hamburguesa):');
-        if (!name) return;
-        const price = parseFloat(prompt('Precio original ($):', '50')) || 50;
-        const stock = parseInt(prompt('Stock disponible:', '10'), 10) || 0;
-        const discount = parseInt(prompt('Porcentaje de descuento opcional (0 a 90):', '0'), 10) || 0;
-
-        const products = JSON.parse(localStorage.getItem(PRODUCTS_KEY) || '[]');
-        const newProd = {
-          id: 'p_' + Date.now(),
-          storeId: this.activeStore.id,
-          name,
-          description: 'Producto disponible para pedidos directos.',
-          imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80',
-          category: 'General',
-          originalPrice: price,
-          discountPercent: discount,
-          finalPrice: calculateFinalPrice(price, discount),
-          stock,
-        };
-        products.unshift(newProd);
-        localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
-        this.render();
-      }
-
-      deleteProduct(id) {
-        if (confirm('¿Deseas eliminar este producto de tu catálogo?')) {
-          let products = JSON.parse(localStorage.getItem(PRODUCTS_KEY) || '[]');
-          products = products.filter(p => p.id !== id);
-          localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
-          this.render();
-        }
       }
     }
 
