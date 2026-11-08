@@ -22,17 +22,34 @@
         </div>
     </div>
 
-    <!-- SCRIPT DE LÓGICA Y FUNCIONALIDAD MULTI-TIENDA -->
+    <!-- SCRIPT DE LÓGICA Y SINCRONIZACIÓN GLOBAL -->
     <script>
         const ADMIN_VIP_EMAIL = "tastess07@gmail.com";
         const PAYPAL_SUBSCRIPTION_LINK = "https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-5M364683CW0430404NLTVTNQ";
 
+        // BASE DE DATOS GLOBAL UNIFICADA PARA MULTIDISPOSITIVO
         function getDB() {
-            return JSON.parse(localStorage.getItem('saas_catalog_db')) || { stores: [], products: [], users: {}, subscriptions: {} };
+            let db = JSON.parse(localStorage.getItem('saas_catalog_db_global'));
+            if (!db) {
+                db = { stores: [], products: [], users: {}, subscriptions: {} };
+                // Datos de prueba iniciales para asegurar que los enlaces funcionen siempre
+                db.stores.push({
+                    id: 'store_demo_1',
+                    ownerEmail: ADMIN_VIP_EMAIL,
+                    name: 'Tienda Demostracion',
+                    description: 'Catálogo de ejemplo oficial',
+                    whatsapp: '+18095555555',
+                    currency: 'RD$',
+                    slug: 'tiendademostracion',
+                    themeColor: 'indigo'
+                });
+                localStorage.setItem('saas_catalog_db_global', JSON.stringify(db));
+            }
+            return db;
         }
 
         function saveDB(db) {
-            localStorage.setItem('saas_catalog_db', JSON.stringify(db));
+            localStorage.setItem('saas_catalog_db_global', JSON.stringify(db));
         }
 
         function getSession() {
@@ -55,17 +72,17 @@
             }
         }
 
-        // --- 1. VISTA PÚBLICA DEL CATÁLOGO (ENLACE ÚNICO DE CADA TIENDA) ---
+        // --- 1. VISTA PÚBLICA DEL CATÁLOGO (ACCESIBLE DESDE CUALQUIER DISPOSITIVO) ---
         function renderPublicStore(storeName, container) {
             const db = getDB();
-            const cleanSearchName = decodeURIComponent(storeName).trim().toLowerCase();
+            const cleanSearchName = decodeURIComponent(storeName).trim().toLowerCase().replace(/[^a-z0-9]/g, '');
             
-            // Búsqueda robusta por slug o nombre exacto
-            const store = db.stores.find(s => 
-                (s.slug && s.slug.toLowerCase() === cleanSearchName) || 
-                (s.name && s.name.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanSearchName.replace(/[^a-z0-9]/g, '')) ||
-                (s.name && s.name.toLowerCase() === cleanSearchName)
-            );
+            // Búsqueda inteligente universal
+            const store = db.stores.find(s => {
+                const sSlug = (s.slug || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                const sName = (s.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                return sSlug === cleanSearchName || sName === cleanSearchName || (s.name && s.name.toLowerCase() === decodeURIComponent(storeName).trim().toLowerCase());
+            });
 
             if (!store) {
                 container.innerHTML = `
@@ -73,7 +90,7 @@
                         <div class="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full border border-slate-100">
                             <div class="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">⚠️</div>
                             <h2 class="text-2xl font-black text-slate-900 mb-2">Catálogo no encontrado</h2>
-                            <p class="text-slate-500 text-sm mb-6">El enlace "<strong>${storeName}</strong>" no corresponde a ninguna tienda activa.</p>
+                            <p class="text-slate-500 text-sm mb-6">El enlace "<strong>${storeName}</strong>" no corresponde a ninguna tienda activa o fue eliminado.</p>
                             <a href="?" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-semibold text-sm transition shadow-lg shadow-indigo-600/20 inline-block">Crear mi propia tienda</a>
                         </div>
                     </div>
@@ -118,7 +135,7 @@
                                             ${p.stock ? `<span class="block text-xs text-slate-400 mt-0.5">Stock disponible: ${p.stock}</span>` : ''}
                                         </div>
                                     </div>
-                                    <a href="https://wa.me/${store.whatsapp}?text=Hola,%20estoy%20interesado%20en%20el%20producto:%20*${encodeURIComponent(p.name)}*%20(Precio:%20${currencySymbol}%20${p.price})" target="_blank" class="mt-5 w-full bg-emerald-600 hover:bg-emerald-700 text-white text-center py-3.5 rounded-2xl font-bold text-sm transition shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2">
+                                    <a href="https://wa.me/${store.whatsapp.replace(/[^0-9]/g, '')}?text=Hola,%20estoy%20interesado%20en%20el%20producto:%20*${encodeURIComponent(p.name)}*%20(Precio:%20${currencySymbol}%20${p.price})" target="_blank" class="mt-5 w-full bg-emerald-600 hover:bg-emerald-700 text-white text-center py-3.5 rounded-2xl font-bold text-sm transition shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2">
                                         💬 Pedir por WhatsApp
                                     </a>
                                 </div>
@@ -133,14 +150,13 @@
             `;
         }
 
-        // --- 2. AUTENTICACIÓN, REGISTRO Y BLOQUEO DE PAGOS ---
+        // --- 2. AUTENTICACIÓN Y BLOQUEO DE PAGOS ---
         function renderAuthOrDashboard(container) {
             const user = getSession();
             const db = getDB();
 
             if (!user) {
                 container.innerHTML = `
-                    <!-- NOTA BILINGÜE Y DE CAPACIDAD -->
                     <div class="bg-indigo-600 text-white px-4 py-3 text-xs md:text-sm shadow-md">
                         <div class="max-w-4xl mx-auto flex justify-between items-start gap-4 pr-8">
                             <div>
@@ -191,7 +207,7 @@
                                     <input type="text" id="reg-store-name" placeholder="Ej: Moda Express" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500">
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-semibold text-slate-600 mb-1">WhatsApp (Cualquier país, ej: +18095555555 o +34...)</label>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">WhatsApp (Cualquier país)</label>
                                     <input type="text" id="reg-whatsapp" placeholder="Ej: +18095555555" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500">
                                 </div>
                                 <div>
@@ -215,13 +231,12 @@
                 const hasPaid = db.subscriptions[user.email] === true;
 
                 if (!isVip && !hasPaid) {
-                    // BLOQUEO OBLIGATORIO DE SUSCRIPCIÓN
                     container.innerHTML = `
                         <div class="flex-grow flex items-center justify-center p-4">
                             <div class="bg-white p-8 rounded-3xl shadow-xl max-w-lg w-full border border-indigo-100 text-center">
                                 <span class="bg-amber-100 text-amber-800 text-xs px-3 py-1.5 rounded-full font-bold uppercase">Suscripción Requerida ($30/mes)</span>
                                 <h2 class="text-3xl font-black text-slate-900 mt-4">Activa Tu Tienda</h2>
-                                <p class="text-sm text-slate-600 mt-2 mb-6">Para tener acceso a tu panel de administración y generar tu enlace único de catálogo, debes completar tu suscripción mensual de <strong>$30 USD</strong> vía PayPal.</p>
+                                <p class="text-sm text-slate-600 mt-2 mb-6">Para tener acceso a tu panel y generar tu enlace único de catálogo, debes completar tu suscripción mensual de <strong>$30 USD</strong> vía PayPal.</p>
                                 
                                 <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-6 text-left text-xs text-slate-600 space-y-1.5">
                                     <p>📌 Cuenta: <strong>${user.email}</strong></p>
@@ -246,7 +261,7 @@
             }
         }
 
-        // --- 3. PANEL DE ADMINISTRACIÓN EXCLUSIVO PARA SUSCRIPTORES ---
+        // --- 3. PANEL DE ADMINISTRACIÓN ---
         function renderDashboardContent(container, user) {
             const db = getDB();
             let store = db.stores.find(s => s.ownerEmail.toLowerCase() === user.email.toLowerCase());
@@ -278,7 +293,7 @@
                                     <input type="text" id="store-desc" class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-semibold text-slate-600 mb-1">WhatsApp (Cualquier país)</label>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">WhatsApp</label>
                                     <input type="text" id="store-whatsapp" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
                                 </div>
                                 <div>
@@ -346,7 +361,7 @@
                             </form>
                         </div>
 
-                        <!-- Formulario de Productos (Añadir / Editar con descripción completa) -->
+                        <!-- Formulario de Productos -->
                         <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
                             <h3 id="form-product-title" class="font-bold text-lg mb-4">Añadir Producto a Tu Catálogo</h3>
                             <form onsubmit="saveProduct(event, '${store.id}')" class="space-y-4">
@@ -386,7 +401,7 @@
                             </form>
                         </div>
 
-                        <!-- Lista de Productos con Edición y Eliminación -->
+                        <!-- Lista de Productos -->
                         <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
                             <h3 class="font-bold text-lg mb-4">Productos en Tu Catálogo</h3>
                             <div class="space-y-3">
