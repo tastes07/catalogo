@@ -18,7 +18,7 @@
         </div>
     </div>
 
-    <!-- MODAL DE DETALLES DE PRODUCTO -->
+    <!-- MODAL DE DETALLES DE PRODUCTO (CLIENTES) -->
     <div id="product-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-lg w-full p-6 relative shadow-2xl">
             <button onclick="closeProductModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 text-2xl font-bold bg-slate-100 hover:bg-slate-200 w-10 h-10 rounded-full flex items-center justify-center transition">×</button>
@@ -26,13 +26,21 @@
         </div>
     </div>
 
-    <!-- SDKs DE FIREBASE Y LÓGICA GENERAL -->
+    <!-- MODAL DE EDICIÓN DE PRODUCTO (ADMIN) -->
+    <div id="edit-product-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 relative shadow-2xl">
+            <button onclick="closeEditModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 text-2xl font-bold bg-slate-100 hover:bg-slate-200 w-10 h-10 rounded-full flex items-center justify-center transition">×</button>
+            <div id="edit-modal-content"></div>
+        </div>
+    </div>
+
+    <!-- SCRIPT PRINCIPAL DE FIREBASE Y LÓGICA DEL SAAS -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-analytics.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, query, where } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
-        // TUS CREDENCIALES OFICIALES DE FIREBASE INTEGRADAS
+        // CREDENCIALES OFICIALES DE FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyB8E7mss81AGLSq_s1qDshwlfbozmZTMQc",
             authDomain: "tastes-catalogo.firebaseapp.com",
@@ -77,7 +85,7 @@
             }
         }
 
-        // --- VISTA PÚBLICA DEL CATÁLOGO ---
+        // --- 1. VISTA PÚBLICA DEL CATÁLOGO (CLIENTES) ---
         async function renderPublicStore(storeSlug, container) {
             try {
                 container.innerHTML = `<div class="flex-grow flex items-center justify-center p-6 text-center"><div class="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div><p class="text-slate-400 text-sm">Buscando catálogo en la nube...</p></div>`;
@@ -126,39 +134,67 @@
                                 <h1 class="text-4xl md:text-5xl font-black tracking-tight mt-2">${storeData.name}</h1>
                                 <p class="text-slate-200 text-sm md:text-base mt-2 max-w-xl leading-relaxed">${storeData.description || 'Explora nuestros productos disponibles'}</p>
                             </div>
+                            <div class="w-full md:w-80">
+                                <input type="text" id="search-input" oninput="filterProductsLocal(${JSON.stringify(products).replace(/"/g, '&quot;')}, '${currencySymbol}')" placeholder="🔍 Buscar productos..." class="w-full px-4 py-3.5 rounded-2xl bg-white/10 border border-white/20 text-white placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-white text-sm backdrop-blur-md shadow-inner">
+                            </div>
                         </div>
                     </header>
+
                     <main class="flex-grow max-w-5xl w-full mx-auto p-4 md:p-8">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                        <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                             ${products.length === 0 ? '<div class="col-span-full text-center py-20"><p class="text-slate-400 text-lg font-medium">Esta tienda aún no tiene productos publicados.</p></div>' : ''}
-                            ${products.map(p => `
-                                <div class="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group">
-                                    <div class="h-56 bg-slate-100 overflow-hidden relative cursor-pointer" onclick="openProductModalContent(${JSON.stringify(p).replace(/"/g, '&quot;')}, '${currencySymbol}')">
-                                        <img src="${p.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500'}" alt="${p.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
-                                    </div>
-                                    <div class="p-5 flex flex-col flex-grow">
-                                        <h3 class="font-bold text-lg text-slate-900 cursor-pointer hover:text-indigo-600 transition" onclick="openProductModalContent(${JSON.stringify(p).replace(/"/g, '&quot;')}, '${currencySymbol}')">${p.name}</h3>
-                                        <p class="text-slate-500 text-sm mt-1.5 line-clamp-2 flex-grow">${p.description || 'Sin descripción detallada.'}</p>
-                                        <div class="mt-4 flex items-baseline justify-between">
-                                            <span class="text-2xl font-black text-indigo-600">${currencySymbol} ${p.price}</span>
-                                            ${p.stock ? `<span class="text-xs text-slate-400">Stock: ${p.stock}</span>` : ''}
+                            ${products.map(p => {
+                                const hasDiscount = p.discount && Number(p.discount) > 0;
+                                const originalPrice = Number(p.price);
+                                const discountVal = Number(p.discount || 0);
+                                const finalPrice = hasDiscount ? (originalPrice - (originalPrice * discountVal / 100)).toFixed(2) : originalPrice;
+                                const stockNum = parseInt(p.stock || 0);
+                                const isOutOfStock = stockNum <= 0;
+
+                                return `
+                                    <div class="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group relative">
+                                        <div class="h-56 bg-slate-100 overflow-hidden cursor-pointer relative" onclick="openProductModalContent(${JSON.stringify(p).replace(/"/g, '&quot;')}, '${currencySymbol}')">
+                                            <img src="${p.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500'}" alt="${p.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                                            ${hasDiscount ? `<span class="absolute top-3 right-3 bg-rose-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">${p.discount}% OFF</span>` : ''}
                                         </div>
-                                        <a href="https://wa.me/${storeData.whatsapp.replace(/[^0-9]/g, '')}?text=Hola,%20estoy%20interesado%20en%20el%20producto:%20*${encodeURIComponent(p.name)}*%20(Precio:%20${currencySymbol}%20${p.price})" target="_blank" class="mt-5 w-full bg-emerald-600 hover:bg-emerald-700 text-white text-center py-3.5 rounded-2xl font-bold text-sm transition shadow-lg flex items-center justify-center gap-2">
-                                            💬 Pedir por WhatsApp
-                                        </a>
+                                        <div class="p-5 flex flex-col flex-grow">
+                                            <h3 class="font-bold text-lg text-slate-900 cursor-pointer hover:text-indigo-600 transition" onclick="openProductModalContent(${JSON.stringify(p).replace(/"/g, '&quot;')}, '${currencySymbol}')">${p.name}</h3>
+                                            <p class="text-slate-500 text-sm mt-1.5 line-clamp-2 flex-grow">${p.description || 'Sin descripción detallada.'}</p>
+                                            <div class="mt-4 flex items-baseline justify-between">
+                                                <div>
+                                                    ${hasDiscount ? `<span class="text-xs text-slate-400 line-through block">${currencySymbol} ${originalPrice}</span>` : ''}
+                                                    <span class="text-2xl font-black text-indigo-600">${currencySymbol} ${finalPrice}</span>
+                                                </div>
+                                                <span class="text-xs font-semibold px-2.5 py-1 rounded-full ${isOutOfStock ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-700'}">
+                                                    Stock: ${stockNum}
+                                                </span>
+                                            </div>
+                                            ${isOutOfStock ? `
+                                                <button disabled class="mt-5 w-full bg-slate-300 text-slate-500 text-center py-3.5 rounded-2xl font-bold text-sm cursor-not-allowed">
+                                                    ❌ Agotado (No disponible)
+                                                </button>
+                                            ` : `
+                                                <a href="https://wa.me/${storeData.whatsapp.replace(/[^0-9]/g, '')}?text=Hola,%20estoy%20interesado%20en%20el%20producto:%20*${encodeURIComponent(p.name)}*%20(Precio:%20${currencySymbol}%20${finalPrice})" target="_blank" class="mt-5 w-full bg-emerald-600 hover:bg-emerald-700 text-white text-center py-3.5 rounded-2xl font-bold text-sm transition shadow-lg flex items-center justify-center gap-2">
+                                                    💬 Pedir por WhatsApp
+                                                </a>
+                                            `}
+                                        </div>
                                     </div>
-                                </div>
-                            `).join('')}
+                                `;
+                            }).join('')}
                         </div>
                     </main>
+                    <footer class="bg-white border-t border-slate-200 py-6 px-4 text-center text-xs text-slate-400 mt-auto">
+                        Taste Catálogo - Tiendas Digitales en la Nube.
+                    </footer>
                 `;
             } catch (error) {
                 console.error(error);
-                container.innerHTML = `<div class="text-center py-20 text-rose-600 font-semibold">Error al cargar la tienda desde Firebase.</div>`;
+                container.innerHTML = `<div class="flex-grow flex items-center justify-center p-6 text-center text-rose-600 font-semibold">Error al cargar la tienda desde Firebase.</div>`;
             }
         }
 
-        // --- PANEL Y AUTENTICACIÓN ---
+        // --- 2. AUTENTICACIÓN (LOGIN / REGISTRO) Y ACCESO CONDICIONAL ---
         function renderAuthOrDashboard(container) {
             container.className = "flex-grow flex flex-col items-center justify-center p-4 w-full";
             const user = getSession();
@@ -166,23 +202,66 @@
             if (!user) {
                 container.innerHTML = `
                     <div class="bg-indigo-600 text-white px-4 py-3 text-xs md:text-sm rounded-2xl mb-6 max-w-md w-full text-center shadow-md">
-                        <p class="font-semibold">🇪🇸 Suscripciones procesadas por PayPal ($30/mes). Escríbenos a ${ADMIN_VIP_EMAIL}.</p>
+                        <p class="font-semibold">🇪🇸 [Español / English]: Suscripción requerida ($30/mes). Escríbenos a ${ADMIN_VIP_EMAIL}.</p>
                     </div>
+
                     <div class="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full border border-slate-100">
                         <div class="text-center mb-6">
                             <h2 class="text-3xl font-black text-slate-900">Taste Catálogo</h2>
                             <p class="text-sm text-slate-500 mt-1">Crea tu tienda online en la nube</p>
                         </div>
-                        <form onsubmit="handleAuthLogin(event)" class="space-y-4">
+                        
+                        <div class="flex border-b border-slate-200 mb-6">
+                            <button id="tab-login" onclick="switchAuthTab('login')" class="flex-1 pb-3 font-bold text-sm text-indigo-600 border-b-2 border-indigo-600 transition">Iniciar Sesión</button>
+                            <button id="tab-register" onclick="switchAuthTab('register')" class="flex-1 pb-3 font-bold text-sm text-slate-400 border-b-2 border-transparent transition">Crear Cuenta</button>
+                        </div>
+
+                        <!-- FORMULARIO LOGIN -->
+                        <form id="form-login" onsubmit="handleAuthLogin(event)" class="space-y-4">
                             <div>
                                 <label class="block text-xs font-semibold text-slate-600 mb-1">Correo Electrónico</label>
-                                <input type="email" id="auth-email" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
+                                <input type="email" id="login-email" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500">
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-slate-600 mb-1">Contraseña</label>
-                                <input type="password" id="auth-pass" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
+                                <input type="password" id="login-pass" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500">
                             </div>
-                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3.5 rounded-2xl text-sm transition shadow-lg">Entrar / Registrarse</button>
+                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3.5 rounded-2xl text-sm transition shadow-lg">Entrar a mi Panel</button>
+                        </form>
+
+                        <!-- FORMULARIO REGISTRO -->
+                        <form id="form-register" onsubmit="handleAuthRegister(event)" class="space-y-4 hidden">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Correo Electrónico</label>
+                                <input type="email" id="reg-email" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Crear Contraseña</label>
+                                <input type="password" id="reg-pass" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre de la Tienda</label>
+                                <input type="text" id="reg-store-name" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Número de WhatsApp (con código de país, ej: +1809...)</label>
+                                <input type="text" id="reg-whatsapp" required placeholder="+18090000000" class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Moneda del Negocio</label>
+                                <select id="reg-currency" class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
+                                    <option value="RD$">RD$ (Peso Dominicano)</option>
+                                    <option value="USD">$ (Dólar EE.UU.)</option>
+                                    <option value="EUR">€ (Euro)</option>
+                                    <option value="MXN">$ (Peso Mexicano)</option>
+                                    <option value="COP">$ (Peso Colombiano)</option>
+                                    <option value="ARS">$ (Peso Argentino)</option>
+                                    <option value="CRC">₡ (Colón Costarricense)</option>
+                                    <option value="PEN">S/ (Sol Peruano)</option>
+                                    <option value="CLP">$ (Peso Chileno)</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3.5 rounded-2xl text-sm transition shadow-lg">Crear Cuenta y Continuar</button>
                         </form>
                     </div>
                 `;
@@ -191,16 +270,54 @@
             }
         }
 
+        window.switchAuthTab = function(tab) {
+            const loginForm = document.getElementById('form-login');
+            const regForm = document.getElementById('form-register');
+            const tabLogin = document.getElementById('tab-login');
+            const tabReg = document.getElementById('tab-register');
+
+            if (tab === 'login') {
+                loginForm.classList.remove('hidden');
+                regForm.classList.add('hidden');
+                tabLogin.className = "flex-1 pb-3 font-bold text-sm text-indigo-600 border-b-2 border-indigo-600 transition";
+                tabReg.className = "flex-1 pb-3 font-bold text-sm text-slate-400 border-b-2 border-transparent transition";
+            } else {
+                loginForm.classList.add('hidden');
+                regForm.classList.remove('hidden');
+                tabReg.className = "flex-1 pb-3 font-bold text-sm text-indigo-600 border-b-2 border-indigo-600 transition";
+                tabLogin.className = "flex-1 pb-3 font-bold text-sm text-slate-400 border-b-2 border-transparent transition";
+            }
+        }
+
         window.handleAuthLogin = function(e) {
             e.preventDefault();
-            const email = document.getElementById('auth-email').value.trim().toLowerCase();
-            setSession({ email });
+            const email = document.getElementById('login-email').value.trim().toLowerCase();
+            setSession({ email, subscribed: email === ADMIN_VIP_EMAIL.toLowerCase() ? true : false });
             initializeAppRouter();
         }
 
+        window.handleAuthRegister = function(e) {
+            e.preventDefault();
+            const email = document.getElementById('reg-email').value.trim().toLowerCase();
+            const storeName = document.getElementById('reg-store-name').value.trim();
+            const whatsapp = document.getElementById('reg-whatsapp').value.trim();
+            const currency = document.getElementById('reg-currency').value;
+
+            // Guardamos temporalmente los datos de registro pendientes de suscripción
+            const pendingStore = { email, storeName, whatsapp, currency };
+            localStorage.setItem('taste_pending_store', JSON.stringify(pendingStore));
+            setSession({ email, subscribed: email === ADMIN_VIP_EMAIL.toLowerCase() ? true : false });
+            initializeAppRouter();
+        }
+
+        // --- 3. PANEL DE ADMINISTRACIÓN Y GESTIÓN DE TIENDA ---
         async function renderDashboard(container, user) {
-            container.innerHTML = `<div class="text-center py-20"><div class="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div><p class="text-slate-400 text-sm">Cargando tu panel...</p></div>`;
+            container.innerHTML = `<div class="text-center py-20"><div class="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div><p class="text-slate-400 text-sm">Cargando tu panel de administración...</p></div>`;
+            
             try {
+                const isVip = user.email.toLowerCase() === ADMIN_VIP_EMAIL.toLowerCase();
+                
+                // Buscar tienda del usuario en Firestore
                 const storesRef = collection(db, "stores");
                 const q = query(storesRef, where("ownerEmail", "==", user.email.toLowerCase()));
                 const querySnapshot = await getDocs(q);
@@ -212,6 +329,54 @@
                     storeId = doc.id;
                 });
 
+                // Si se registró recién y no tiene tienda creada en Firestore, la creamos de forma automática
+                const pendingData = JSON.parse(localStorage.getItem('taste_pending_store'));
+                if (!store && pendingData && pendingData.email === user.email.toLowerCase()) {
+                    const slug = pendingData.storeName.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    const newStoreRef = await addDoc(collection(db, "stores"), {
+                        ownerEmail: user.email.toLowerCase(),
+                        name: pendingData.storeName,
+                        description: 'Bienvenido a nuestra tienda digital oficial.',
+                        whatsapp: pendingData.whatsapp,
+                        currency: pendingData.currency,
+                        slug: slug,
+                        themeColor: 'indigo'
+                    });
+                    localStorage.removeItem('taste_pending_store');
+                    storeId = newStoreRef.id;
+                    const freshSnap = await getDocs(q);
+                    freshSnap.forEach(d => { store = d.data(); });
+                }
+
+                // SI NO ESTÁ SUSCRITO (Y NO ES VIP)
+                if (!user.subscribed && !isVip) {
+                    container.innerHTML = `
+                        <header class="bg-white border-b border-slate-200 py-4 px-6 shadow-sm flex justify-between items-center w-full">
+                            <h1 class="font-bold text-lg text-slate-800">Suscripción Requerida - Taste Catálogo</h1>
+                            <button onclick="logout()" class="text-rose-600 hover:bg-rose-50 px-3 py-2 rounded-xl text-xs font-semibold transition">Cerrar Sesión</button>
+                        </header>
+                        <main class="flex-grow max-w-md w-full mx-auto p-6 flex items-center justify-center">
+                            <div class="bg-white p-8 rounded-3xl shadow-xl border border-slate-100 text-center w-full">
+                                <div class="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">🔒</div>
+                                <h2 class="text-2xl font-black text-slate-900 mb-2">Activa tu Suscripción ($30/mes)</h2>
+                                <p class="text-slate-500 text-sm mb-6 leading-relaxed">Para acceder a tu panel de administración, publicar tu tienda y gestionar tus productos, completa tu pago mensual en PayPal.</p>
+                                <a href="${PAYPAL_SUBSCRIPTION_LINK}" target="_blank" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-2xl text-sm transition shadow-lg shadow-blue-600/20 block mb-4">Pagar con PayPal</a>
+                                <button onclick="simularPagoExitoso()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-2xl text-xs transition">Ya pagué (Activar Acceso)</button>
+                            </div>
+                        </main>
+                    `;
+                    return;
+                }
+
+                // SI YA ESTÁ SUSCRITO, CARGAR PRODUCTOS Y PANEL COMPLETO
+                let products = [];
+                if (storeId) {
+                    const productsRef = collection(db, "products");
+                    const prodQuery = query(productsRef, where("storeId", "==", storeId));
+                    const prodSnapshot = await getDocs(prodQuery);
+                    prodSnapshot.forEach(p => products.push({ id: p.id, ...p.data() }));
+                }
+
                 container.innerHTML = `
                     <header class="bg-white border-b border-slate-200 py-4 px-6 shadow-sm flex justify-between items-center w-full">
                         <div>
@@ -220,97 +385,318 @@
                         </div>
                         <button onclick="logout()" class="text-rose-600 hover:bg-rose-50 px-3 py-2 rounded-xl text-xs font-semibold transition">Cerrar Sesión</button>
                     </header>
+
                     <main class="flex-grow max-w-4xl w-full mx-auto p-4 md:p-8 space-y-6">
-                        ${!store ? `
-                            <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
-                                <h2 class="text-2xl font-bold mb-2">Crea los Datos de tu Tienda</h2>
-                                <form onsubmit="createStoreCloud(event, '${user.email}')" class="space-y-4 mt-4">
-                                    <div>
-                                        <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre de la Tienda</label>
-                                        <input type="text" id="new-store-name" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
+                        
+                        ${store ? `
+                            <!-- ENLACE ÚNICO Y EDITAR DATOS DE TIENDA -->
+                            <div class="bg-gradient-to-r from-indigo-50 to-slate-50 border border-indigo-100 p-6 rounded-3xl shadow-sm">
+                                <span class="bg-indigo-600 text-white text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-wider">Tu Enlace Único Global</span>
+                                <h2 class="text-2xl font-black text-slate-900 mt-2">${store.name}</h2>
+                                <p class="text-xs text-slate-500 mt-1">Comparte este enlace con tus clientes:</p>
+                                <a href="?store=${encodeURIComponent(store.slug)}" target="_blank" class="text-indigo-600 font-bold text-sm underline break-all mt-1 inline-block">${window.location.origin}${window.location.pathname}?store=${encodeURIComponent(store.slug)}</a>
+                                
+                                <form onsubmit="updateStoreMeta(event, '${storeId}')" class="mt-6 pt-6 border-t border-indigo-100 space-y-4">
+                                    <h3 class="font-bold text-sm text-slate-700">Editar Datos de tu Tienda (Tipo Shopify)</h3>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre de la Tienda</label>
+                                            <input type="text" id="edit-store-name" value="${store.name}" required class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-semibold text-slate-600 mb-1">WhatsApp (con código de país)</label>
+                                            <input type="text" id="edit-store-whatsapp" value="${store.whatsapp}" required class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm">
+                                        </div>
                                     </div>
                                     <div>
-                                        <label class="block text-xs font-semibold text-slate-600 mb-1">Descripción</label>
-                                        <input type="text" id="new-store-desc" class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
+                                        <label class="block text-xs font-semibold text-slate-600 mb-1">Descripción de la Tienda</label>
+                                        <textarea id="edit-store-desc" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm h-16">${store.description || ''}</textarea>
                                     </div>
-                                    <div>
-                                        <label class="block text-xs font-semibold text-slate-600 mb-1">WhatsApp</label>
-                                        <input type="text" id="new-store-whatsapp" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-semibold text-slate-600 mb-1">Moneda</label>
-                                        <select id="new-store-currency" class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
-                                            <option value="RD$">RD$ (Peso Dominicano)</option>
-                                            <option value="USD">$ (Dólar)</option>
-                                            <option value="EUR">€ (Euro)</option>
-                                        </select>
-                                    </div>
-                                    <button type="submit" class="bg-indigo-600 text-white font-semibold px-6 py-3 rounded-2xl text-sm">Crear mi Tienda en la Nube</button>
+                                    <button type="submit" class="bg-slate-900 hover:bg-slate-800 text-white font-semibold px-5 py-2.5 rounded-xl text-xs transition shadow-md">Guardar Cambios de Tienda</button>
                                 </form>
                             </div>
-                        ` : `
-                            <div class="bg-indigo-50 border border-indigo-100 p-6 rounded-3xl">
-                                <h2 class="text-2xl font-black text-slate-900">${store.name}</h2>
-                                <p class="text-xs text-slate-500 mt-1">Tu enlace único:</p>
-                                <a href="?store=${encodeURIComponent(store.slug)}" target="_blank" class="text-indigo-600 font-bold text-sm underline break-all mt-1 inline-block">${window.location.origin}${window.location.pathname}?store=${encodeURIComponent(store.slug)}</a>
-                            </div>
-                            <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
-                                <h3 class="font-bold text-lg mb-4">Añadir Producto a la Nube</h3>
-                                <form onsubmit="addProductCloud(event, '${storeId}')" class="space-y-4">
+                        ` : ''}
+
+                        <!-- FORMULARIO AÑADIR PRODUCTO A LA NUBE -->
+                        <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+                            <h3 class="font-bold text-lg mb-4 text-slate-900">Añadir Producto a la Nube</h3>
+                            <form onsubmit="addProductCloud(event, '${storeId}')" class="space-y-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre</label>
+                                        <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre del Producto</label>
                                         <input type="text" id="prod-name" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
                                     </div>
                                     <div>
-                                        <label class="block text-xs font-semibold text-slate-600 mb-1">Precio (${store.currency})</label>
-                                        <input type="number" id="prod-price" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
+                                        <label class="block text-xs font-semibold text-slate-600 mb-1">Precio (${store ? store.currency : 'RD$'})</label>
+                                        <input type="number" step="any" id="prod-price" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-600 mb-1">Stock Disponible</label>
+                                        <input type="number" id="prod-stock" value="10" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
                                     </div>
                                     <div>
-                                        <label class="block text-xs font-semibold text-slate-600 mb-1">Descripción</label>
-                                        <textarea id="prod-desc" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm h-20"></textarea>
+                                        <label class="block text-xs font-semibold text-slate-600 mb-1">Descuento (%) opcional</label>
+                                        <input type="number" id="prod-discount" placeholder="Ej: 15" class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm">
                                     </div>
-                                    <button type="submit" class="bg-indigo-600 text-white font-semibold px-6 py-3 rounded-2xl text-sm">Guardar Producto en Firebase</button>
-                                </form>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-600 mb-1">Imagen del Producto (Archivo)</label>
+                                        <input type="file" id="prod-file" accept="image/*" class="w-full text-xs text-slate-500 file:py-2 file:px-3 file:rounded-xl file:border-0 file:font-semibold file:bg-indigo-50 file:text-indigo-700">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Descripción del Producto</label>
+                                    <textarea id="prod-desc" required class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm h-20"></textarea>
+                                </div>
+                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3.5 rounded-2xl text-sm transition shadow-lg shadow-indigo-600/20">Guardar Producto en el Catálogo</button>
+                            </form>
+                        </div>
+
+                        <!-- LISTA DE PRODUCTOS DE TU CATÁLOGO (PARA EDITAR O ELIMINAR) -->
+                        <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+                            <h3 class="font-bold text-lg mb-4 text-slate-900">Productos de tu Catálogo (${products.length})</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                ${products.length === 0 ? '<p class="col-span-full text-slate-400 text-sm py-4">Aún no has agregado productos a tu catálogo.</p>' : ''}
+                                ${products.map(p => `
+                                    <div class="border border-slate-200 rounded-2xl p-4 flex gap-4 items-center bg-slate-50/50">
+                                        <img src="${p.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500'}" class="w-16 h-16 object-cover rounded-xl shadow-sm">
+                                        <div class="flex-grow">
+                                            <h4 class="font-bold text-sm text-slate-900">${p.name}</h4>
+                                            <p class="text-xs text-indigo-600 font-bold mt-0.5">${store.currency} ${p.price} ${p.discount ? `<span class="text-rose-500 text-[10px]">(${p.discount}% OFF)</span>` : ''}</p>
+                                            <p class="text-[11px] text-slate-400 mt-0.5">Stock: ${p.stock || 0}</p>
+                                        </div>
+                                        <div class="flex flex-col gap-1.5">
+                                            <button onclick="openEditProductModal('${p.id}', ${JSON.stringify(p).replace(/"/g, '&quot;')})" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition">Editar</button>
+                                            <button onclick="deleteProduct('${p.id}')" class="bg-rose-100 hover:bg-rose-200 text-rose-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition">Eliminar</button>
+                                        </div>
+                                    </div>
+                                `).join('')}
                             </div>
-                        `}
+                        </div>
+
+                        <!-- BUZÓN DE SUGERENCIAS (LLEGA AL ADMIN VIP) -->
+                        <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+                            <h3 class="font-bold text-lg mb-2 text-slate-900">Buzón de Sugerencias y Soporte</h3>
+                            <p class="text-xs text-slate-500 mb-4">¿Tienes algún problema, duda o sugerencia? Envíanos un mensaje directo al administrador (${ADMIN_VIP_EMAIL}).</p>
+                            <form onsubmit="sendSuggestion(event, '${user.email}')" class="space-y-3">
+                                <textarea id="suggestion-msg" required placeholder="Escribe aquí tu sugerencia o reporte de error..." class="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm h-24 focus:ring-2 focus:ring-indigo-500"></textarea>
+                                <button type="submit" class="bg-slate-900 hover:bg-slate-800 text-white font-semibold px-6 py-3 rounded-2xl text-xs transition shadow-md">Enviar Mensaje al Administrador</button>
+                            </form>
+                        </div>
+
                     </main>
                 `;
             } catch (err) {
                 console.error(err);
+                container.innerHTML = `<div class="text-center py-20 text-rose-600">Error al cargar el panel de administración.</div>`;
             }
         }
 
-        window.createStoreCloud = async function(e, email) {
+        window.simularPagoExitoso = function() {
+            const user = getSession();
+            if (user) {
+                user.subscribed = true;
+                setSession(user);
+                initializeAppRouter();
+            }
+        }
+
+        window.updateStoreMeta = async function(e, storeId) {
             e.preventDefault();
-            const name = document.getElementById('new-store-name').value.trim();
-            const description = document.getElementById('new-store-desc').value.trim();
-            const whatsapp = document.getElementById('new-store-whatsapp').value.trim();
-            const currency = document.getElementById('new-store-currency').value;
+            const name = document.getElementById('edit-store-name').value.trim();
+            const whatsapp = document.getElementById('edit-store-whatsapp').value.trim();
+            const description = document.getElementById('edit-store-desc').value.trim();
             const slug = name.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-            await addDoc(collection(db, "stores"), { ownerEmail: email, name, description, whatsapp, currency, slug });
-            initializeAppRouter();
+            try {
+                await updateDoc(doc(db, "stores", storeId), { name, whatsapp, description, slug });
+                alert("¡Datos de la tienda actualizados con éxito!");
+                initializeAppRouter();
+            } catch (err) {
+                alert("Error al actualizar tienda: " + err.message);
+            }
         }
 
         window.addProductCloud = async function(e, storeId) {
             e.preventDefault();
             const name = document.getElementById('prod-name').value.trim();
             const price = document.getElementById('prod-price').value.trim();
+            const stock = document.getElementById('prod-stock').value.trim();
+            const discount = document.getElementById('prod-discount').value.trim();
             const description = document.getElementById('prod-desc').value.trim();
+            const fileInput = document.getElementById('prod-file');
 
-            await addDoc(collection(db, "products"), { storeId, name, price, description, image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500' });
-            alert("¡Producto guardado en la nube!");
-            initializeAppRouter();
+            const saveToFirestore = async (imageUrl) => {
+                try {
+                    await addDoc(collection(db, "products"), {
+                        storeId,
+                        name,
+                        price,
+                        stock,
+                        discount,
+                        description,
+                        image: imageUrl || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500'
+                    });
+                    alert("¡Producto guardado exitosamente en la nube!");
+                    initializeAppRouter();
+                } catch (err) {
+                    alert("Error al guardar producto: " + err.message);
+                }
+            };
+
+            if (fileInput.files && fileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    saveToFirestore(e.target.result);
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                saveToFirestore('');
+            }
+        }
+
+        window.openEditProductModal = function(productId, p) {
+            const content = document.getElementById('edit-modal-content');
+            content.innerHTML = `
+                <h3 class="text-xl font-bold text-slate-900 mb-4">Editar Producto</h3>
+                <form onsubmit="saveEditedProduct(event, '${productId}')" class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre</label>
+                        <input type="text" id="edit-p-name" value="${p.name}" required class="w-full px-4 py-2 border border-slate-200 rounded-xl text-sm">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Precio</label>
+                            <input type="number" step="any" id="edit-p-price" value="${p.price}" required class="w-full px-4 py-2 border border-slate-200 rounded-xl text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Stock</label>
+                            <input type="number" id="edit-p-stock" value="${p.stock || 10}" required class="w-full px-4 py-2 border border-slate-200 rounded-xl text-sm">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Descuento (%)</label>
+                        <input type="number" id="edit-p-discount" value="${p.discount || ''}" class="w-full px-4 py-2 border border-slate-200 rounded-xl text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Descripción</label>
+                        <textarea id="edit-p-desc" required class="w-full px-4 py-2 border border-slate-200 rounded-xl text-sm h-20">${p.description || ''}</textarea>
+                    </div>
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl text-xs transition shadow-md">Guardar Cambios</button>
+                </form>
+            `;
+            document.getElementById('edit-product-modal').classList.remove('hidden');
+        }
+
+        window.saveEditedProduct = async function(e, productId) {
+            e.preventDefault();
+            const name = document.getElementById('edit-p-name').value.trim();
+            const price = document.getElementById('edit-p-price').value.trim();
+            const stock = document.getElementById('edit-p-stock').value.trim();
+            const discount = document.getElementById('edit-p-discount').value.trim();
+            const description = document.getElementById('edit-p-desc').value.trim();
+
+            try {
+                await updateDoc(doc(db, "products", productId), { name, price, stock, discount, description });
+                closeEditModal();
+                alert("¡Producto actualizado correctamente!");
+                initializeAppRouter();
+            } catch (err) {
+                alert("Error al actualizar: " + err.message);
+            }
+        }
+
+        window.closeEditModal = function() {
+            document.getElementById('edit-product-modal').classList.add('hidden');
+        }
+
+        window.deleteProduct = async function(productId) {
+            if (confirm("¿Estás seguro de eliminar este producto de la nube?")) {
+                try {
+                    await deleteDoc(doc(db, "products", productId));
+                    alert("Producto eliminado.");
+                    initializeAppRouter();
+                } catch (err) {
+                    alert("Error al eliminar: " + err.message);
+                }
+            }
+        }
+
+        window.sendSuggestion = function(e, userEmail) {
+            e.preventDefault();
+            const msg = document.getElementById('suggestion-msg').value.trim();
+            // Envío directo simulado vía mailto al correo VIP del administrador solicitado
+            const mailtoLink = `mailto:${ADMIN_VIP_EMAIL}?subject=Buzon%20de%20Sugerencias%20-%20Taste%20Catalogo&body=Remitente:%20${encodeURIComponent(userEmail)}%0D%0A%0D%0AMensaje:%0D%0A${encodeURIComponent(msg)}`;
+            window.location.href = mailtoLink;
+            alert("¡Mensaje preparado para enviar al administrador!");
+            document.getElementById('suggestion-msg').value = '';
+        }
+
+        window.filterProductsLocal = function(products, currencySymbol) {
+            const queryText = document.getElementById('search-input').value.toLowerCase();
+            const filtered = products.filter(p => p.name.toLowerCase().includes(queryText));
+            const grid = document.getElementById('products-grid');
+            if(!grid) return;
+
+            grid.innerHTML = filtered.length === 0 ? '<div class="col-span-full text-center py-20"><p class="text-slate-400 text-lg font-medium">No se encontraron productos.</p></div>' : 
+                filtered.map(p => {
+                    const hasDiscount = p.discount && Number(p.discount) > 0;
+                    const originalPrice = Number(p.price);
+                    const discountVal = Number(p.discount || 0);
+                    const finalPrice = hasDiscount ? (originalPrice - (originalPrice * discountVal / 100)).toFixed(2) : originalPrice;
+                    const stockNum = parseInt(p.stock || 0);
+                    const isOutOfStock = stockNum <= 0;
+
+                    return `
+                        <div class="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group relative">
+                            <div class="h-56 bg-slate-100 overflow-hidden cursor-pointer relative" onclick="openProductModalContent(${JSON.stringify(p).replace(/"/g, '&quot;')}, '${currencySymbol}')">
+                                <img src="${p.image}" alt="${p.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                                ${hasDiscount ? `<span class="absolute top-3 right-3 bg-rose-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">${p.discount}% OFF</span>` : ''}
+                            </div>
+                            <div class="p-5 flex flex-col flex-grow">
+                                <h3 class="font-bold text-lg text-slate-900 cursor-pointer hover:text-indigo-600 transition" onclick="openProductModalContent(${JSON.stringify(p).replace(/"/g, '&quot;')}, '${currencySymbol}')">${p.name}</h3>
+                                <p class="text-slate-500 text-sm mt-1.5 line-clamp-2 flex-grow">${p.description || 'Sin descripción.'}</p>
+                                <div class="mt-4 flex items-baseline justify-between">
+                                    <div>
+                                        ${hasDiscount ? `<span class="text-xs text-slate-400 line-through block">${currencySymbol} ${originalPrice}</span>` : ''}
+                                        <span class="text-2xl font-black text-indigo-600">${currencySymbol} ${finalPrice}</span>
+                                    </div>
+                                    <span class="text-xs font-semibold px-2.5 py-1 rounded-full ${isOutOfStock ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-700'}">
+                                        Stock: ${stockNum}
+                                    </span>
+                                </div>
+                                ${isOutOfStock ? `
+                                    <button disabled class="mt-5 w-full bg-slate-300 text-slate-500 text-center py-3.5 rounded-2xl font-bold text-sm cursor-not-allowed">
+                                        ❌ Agotado
+                                    </button>
+                                ` : `
+                                    <a href="https://wa.me/?text=Hola,%20interesado%20en%20*${encodeURIComponent(p.name)}*" target="_blank" class="mt-5 w-full bg-emerald-600 hover:bg-emerald-700 text-white text-center py-3.5 rounded-2xl font-bold text-sm transition shadow-lg flex items-center justify-center gap-2">
+                                        💬 Pedir por WhatsApp
+                                    </a>
+                                `}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
         }
 
         window.openProductModalContent = function(p, currencySymbol) {
+            const hasDiscount = p.discount && Number(p.discount) > 0;
+            const originalPrice = Number(p.price);
+            const discountVal = Number(p.discount || 0);
+            const finalPrice = hasDiscount ? (originalPrice - (originalPrice * discountVal / 100)).toFixed(2) : originalPrice;
+
             const modalContent = document.getElementById('modal-content');
             modalContent.innerHTML = `
                 <img src="${p.image}" class="w-full h-72 object-cover rounded-2xl mb-4 shadow-md">
                 <h3 class="text-2xl font-black text-slate-900">${p.name}</h3>
-                <p class="text-2xl font-black text-indigo-600 mt-2">${currencySymbol} ${p.price}</p>
+                <div class="mt-2 flex items-baseline gap-3">
+                    <span class="text-2xl font-black text-indigo-600">${currencySymbol} ${finalPrice}</span>
+                    ${hasDiscount ? `<span class="text-sm text-slate-400 line-through">${currencySymbol} ${originalPrice}</span> <span class="bg-rose-100 text-rose-600 text-xs font-bold px-2 py-0.5 rounded-full">${p.discount}% OFF</span>` : ''}
+                </div>
                 <p class="text-sm text-slate-600 mt-4 leading-relaxed">${p.description || 'Sin descripción detallada.'}</p>
-                ${p.stock ? `<p class="text-xs text-slate-400 mt-3 font-semibold">Stock disponible: ${p.stock} unidades</p>` : ''}
+                <p class="text-xs text-slate-400 mt-3 font-semibold">Stock disponible: ${p.stock || 0} unidades</p>
             `;
             document.getElementById('product-modal').classList.remove('hidden');
         }
