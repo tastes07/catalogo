@@ -492,22 +492,47 @@
         }
       }
 
+      // CORRECCIÓN TOTAL DE SESIÓN ADMIN: Evita pantallas en blanco y restaura tienda
       loadSession() {
         const email = localStorage.getItem(SESSION_KEY);
         if (email) {
           const users = JSON.parse(localStorage.getItem(USERS_KEY) || '{}');
-          const user = users[email.toLowerCase()];
+          let user = users[email.toLowerCase()];
+          if (!user && email.toLowerCase() === VIP_EMAIL.toLowerCase()) {
+            user = {
+              id: 'usr_vip',
+              email: VIP_EMAIL,
+              password: 'admin',
+              subscriptionStatus: 'active',
+              isVipExempt: true,
+              storeId: 'mi-tienda-oficial',
+            };
+            users[email.toLowerCase()] = user;
+            localStorage.setItem(USERS_KEY, JSON.stringify(users));
+          }
+
           if (user) {
             if (user.email.toLowerCase() === VIP_EMAIL.toLowerCase()) {
               user.subscriptionStatus = 'active';
               user.isVipExempt = true;
             }
             this.currentUser = user;
+            const stores = JSON.parse(localStorage.getItem(STORES_KEY) || '{}');
+            this.activeStore = stores[user.storeId] || {
+              id: user.storeId || 'mi-tienda-oficial',
+              ownerEmail: user.email,
+              name: 'Mi Tienda Oficial',
+              description: 'Catálogo oficial de productos.',
+              whatsapp: '',
+              currency: '$ USD'
+            };
+            stores[this.activeStore.id] = this.activeStore;
+            localStorage.setItem(STORES_KEY, JSON.stringify(stores));
           }
         }
       }
 
-      // REQUISITO 1 & 3: ENLACES ÚNICOS INDEPENDIENTES Y SINCRONIZACIÓN ENTRE DISPOSITIVOS
+      // REQUISITO 2 & 3: ENLACES ÚNICOS INDEPENDIENTES Y SINCRONIZACIÓN ENTRE DISPOSITIVOS
       handleUrlRouting() {
         const params = new URLSearchParams(window.location.search);
         let storeId = params.get('store') || params.get('t');
@@ -570,12 +595,15 @@
             } else {
               const stores = JSON.parse(localStorage.getItem(STORES_KEY) || '{}');
               this.activeStore = stores[this.currentUser.storeId] || {
-                id: this.currentUser.storeId,
-                name: 'Mi Tienda',
-                description: 'Catálogo oficial',
+                id: this.currentUser.storeId || 'mi-tienda-oficial',
+                ownerEmail: this.currentUser.email,
+                name: 'Mi Tienda Oficial',
+                description: 'Catálogo oficial de productos.',
                 whatsapp: '',
                 currency: '$ USD'
               };
+              stores[this.activeStore.id] = this.activeStore;
+              localStorage.setItem(STORES_KEY, JSON.stringify(stores));
               this.currentView = 'admin';
             }
           } else {
@@ -822,18 +850,46 @@
         if (window.lucide) lucide.createIcons();
       }
 
-      // RENDERIZADO PRINCIPAL
+      // RENDERIZADO PRINCIPAL A PRUEBA DE FALLOS
       render() {
-        this.renderNavbar();
         const root = document.getElementById('app-root');
+        this.renderNavbar();
 
-        if (this.currentView === 'paywall') {
-          root.innerHTML = this.renderPaywallView();
-        } else if (this.currentView === 'admin' && !this.isCustomerStoreLink) {
-          root.innerHTML = this.renderAdminView();
-        } else if (this.currentView === 'public' || this.isCustomerStoreLink) {
+        if (this.isCustomerStoreLink || this.currentView === 'public') {
+          if (!this.activeStore) {
+            this.activeStore = {
+              id: this.storeUrlParam || 'tienda-oficial',
+              name: 'Catálogo de la Tienda',
+              description: 'Explora nuestra selección completa de artículos exclusivos y realiza tus pedidos directamente a nuestro WhatsApp.',
+              whatsapp: '',
+              currency: '$ USD'
+            };
+          }
           root.innerHTML = this.renderPublicView();
+        } else if (this.currentView === 'paywall') {
+          root.innerHTML = this.renderPaywallView();
+        } else if (this.currentView === 'admin') {
+          if (!this.currentUser) {
+            this.currentView = 'home';
+            root.innerHTML = this.renderHomeView();
+          } else {
+            if (!this.activeStore) {
+              const stores = JSON.parse(localStorage.getItem(STORES_KEY) || '{}');
+              this.activeStore = stores[this.currentUser.storeId] || {
+                id: this.currentUser.storeId || 'mi-tienda-oficial',
+                ownerEmail: this.currentUser.email,
+                name: 'Mi Tienda Oficial',
+                description: 'Catálogo oficial de productos.',
+                whatsapp: '',
+                currency: '$ USD'
+              };
+              stores[this.activeStore.id] = this.activeStore;
+              localStorage.setItem(STORES_KEY, JSON.stringify(stores));
+            }
+            root.innerHTML = this.renderAdminView();
+          }
         } else {
+          // Página Raíz: Portal y Landing SaaS
           root.innerHTML = this.renderHomeView();
         }
 
@@ -1738,9 +1794,11 @@
           const users = JSON.parse(localStorage.getItem(USERS_KEY) || '{}');
           const isVip = email.toLowerCase() === VIP_EMAIL.toLowerCase();
 
-          if (!users[email.toLowerCase()]) {
+          let user = users[email.toLowerCase()];
+
+          if (!user) {
             if (isVip) {
-              const vipUser = {
+              user = {
                 id: 'usr_vip',
                 email: VIP_EMAIL,
                 password,
@@ -1748,31 +1806,37 @@
                 isVipExempt: true,
                 storeId: 'mi-tienda-oficial',
               };
-              users[email.toLowerCase()] = vipUser;
+              users[email.toLowerCase()] = user;
               localStorage.setItem(USERS_KEY, JSON.stringify(users));
             } else {
-              errorBox.textContent = 'No se encontró cuenta con este correo.';
+              errorBox.textContent = 'No se encontró cuenta con este correo. Puedes crear tu tienda en la pestaña "Crear Tienda".';
               errorBox.classList.remove('hidden');
               return;
             }
           }
 
-          const user = users[email.toLowerCase()];
           if (isVip) {
             user.subscriptionStatus = 'active';
             user.isVipExempt = true;
           }
 
-          localStorage.setItem(SESSION_KEY, email);
-          this.currentUser = user;
           const stores = JSON.parse(localStorage.getItem(STORES_KEY) || '{}');
-          this.activeStore = stores[user.storeId] || {
-            id: user.storeId,
-            name: 'Mi Tienda',
-            description: 'Catálogo oficial',
-            whatsapp: '',
-            currency: '$ USD'
-          };
+          const storeId = user.storeId || 'mi-tienda-oficial';
+          if (!stores[storeId]) {
+            stores[storeId] = {
+              id: storeId,
+              ownerEmail: user.email,
+              name: 'Mi Tienda Oficial',
+              description: 'Catálogo oficial de productos exclusivos. Haz tus pedidos directo a WhatsApp.',
+              whatsapp: '',
+              currency: '$ USD'
+            };
+            localStorage.setItem(STORES_KEY, JSON.stringify(stores));
+          }
+
+          localStorage.setItem(SESSION_KEY, user.email);
+          this.currentUser = user;
+          this.activeStore = stores[storeId];
           this.closeAuthModal();
           this.currentView = (user.subscriptionStatus === 'active' || user.isVipExempt) ? 'admin' : 'paywall';
           this.render();
