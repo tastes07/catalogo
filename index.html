@@ -59,10 +59,29 @@
         const PAYPAL_SUBSCRIPTION_LINK = "https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-5M364683CW0430404NLTVTNQ";
 
         function getSession() {
-            return JSON.parse(localStorage.getItem('taste_current_user')) || null;
+            const sessionStr = localStorage.getItem('taste_current_user');
+            if (!sessionStr) return null;
+            try {
+                const user = JSON.parse(sessionStr);
+                // Forzar validación estricta de seguridad: si no es VIP, su suscripción es falsa a menos que se valide externamente
+                const isVip = user.email && user.email.toLowerCase() === ADMIN_VIP_EMAIL.toLowerCase();
+                if (!isVip && !user.subscribed) {
+                    user.subscribed = false;
+                }
+                return user;
+            } catch (e) {
+                return null;
+            }
         }
 
         function setSession(user) {
+            const isVip = user.email && user.email.toLowerCase() === ADMIN_VIP_EMAIL.toLowerCase();
+            if (isVip) {
+                user.subscribed = true;
+            } else {
+                // Asegurar estrictamente que un usuario nuevo no sea admin ni tenga suscripción gratuita
+                user.subscribed = false;
+            }
             localStorage.setItem('taste_current_user', JSON.stringify(user));
         }
 
@@ -292,7 +311,8 @@
         window.handleAuthLogin = function(e) {
             e.preventDefault();
             const email = document.getElementById('login-email').value.trim().toLowerCase();
-            setSession({ email, subscribed: email === ADMIN_VIP_EMAIL.toLowerCase() ? true : false });
+            const isVip = email === ADMIN_VIP_EMAIL.toLowerCase();
+            setSession({ email, subscribed: isVip });
             initializeAppRouter();
         }
 
@@ -302,10 +322,11 @@
             const storeName = document.getElementById('reg-store-name').value.trim();
             const whatsapp = document.getElementById('reg-whatsapp').value.trim();
             const currency = document.getElementById('reg-currency').value;
+            const isVip = email === ADMIN_VIP_EMAIL.toLowerCase();
 
             const pendingStore = { email, storeName, whatsapp, currency };
             localStorage.setItem('taste_pending_store', JSON.stringify(pendingStore));
-            setSession({ email, subscribed: email === ADMIN_VIP_EMAIL.toLowerCase() ? true : false });
+            setSession({ email, subscribed: isVip });
             initializeAppRouter();
         }
 
@@ -316,6 +337,25 @@
             try {
                 const isVip = user.email.toLowerCase() === ADMIN_VIP_EMAIL.toLowerCase();
                 
+                // SI NO ESTÁ SUSCRITO Y NO ES VIP -> BLOQUEO OBLIGATORIO ESTRICTO SIN NINGÚN BOTÓN DE ACCESO GRATIS
+                if (!user.subscribed && !isVip) {
+                    container.innerHTML = `
+                        <header class="bg-white border-b border-slate-200 py-4 px-6 shadow-sm flex justify-between items-center w-full">
+                            <h1 class="font-bold text-lg text-slate-800">Suscripción Requerida - Taste Catálogo</h1>
+                            <button onclick="logout()" class="text-rose-600 hover:bg-rose-50 px-3 py-2 rounded-xl text-xs font-semibold transition">Cerrar Sesión</button>
+                        </header>
+                        <main class="flex-grow max-w-md w-full mx-auto p-6 flex items-center justify-center">
+                            <div class="bg-white p-8 rounded-3xl shadow-xl border border-slate-100 text-center w-full">
+                                <div class="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">🔒</div>
+                                <h2 class="text-2xl font-black text-slate-900 mb-2">Activa tu Suscripción ($30/mes)</h2>
+                                <p class="text-slate-500 text-sm mb-6 leading-relaxed">Para acceder a tu panel de administración, publicar tu tienda y gestionar tus productos, es obligatorio completar tu pago mensual en PayPal.</p>
+                                <a href="${PAYPAL_SUBSCRIPTION_LINK}" target="_blank" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-2xl text-sm transition shadow-lg shadow-blue-600/20 block">Suscribirse con PayPal</a>
+                            </div>
+                        </main>
+                    `;
+                    return;
+                }
+
                 const storesRef = collection(db, "stores");
                 const q = query(storesRef, where("ownerEmail", "==", user.email.toLowerCase()));
                 const querySnapshot = await getDocs(q);
@@ -343,25 +383,6 @@
                     storeId = newStoreRef.id;
                     const freshSnap = await getDocs(q);
                     freshSnap.forEach(d => { store = d.data(); });
-                }
-
-                // SI NO ESTÁ SUSCRITO (Y NO ES VIP) -> BLOQUEO OBLIGATORIO SIN BOTONES FALSOS
-                if (!user.subscribed && !isVip) {
-                    container.innerHTML = `
-                        <header class="bg-white border-b border-slate-200 py-4 px-6 shadow-sm flex justify-between items-center w-full">
-                            <h1 class="font-bold text-lg text-slate-800">Suscripción Requerida - Taste Catálogo</h1>
-                            <button onclick="logout()" class="text-rose-600 hover:bg-rose-50 px-3 py-2 rounded-xl text-xs font-semibold transition">Cerrar Sesión</button>
-                        </header>
-                        <main class="flex-grow max-w-md w-full mx-auto p-6 flex items-center justify-center">
-                            <div class="bg-white p-8 rounded-3xl shadow-xl border border-slate-100 text-center w-full">
-                                <div class="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">🔒</div>
-                                <h2 class="text-2xl font-black text-slate-900 mb-2">Activa tu Suscripción ($30/mes)</h2>
-                                <p class="text-slate-500 text-sm mb-6 leading-relaxed">Para acceder a tu panel de administración, publicar tu tienda y gestionar tus productos, es obligatorio completar tu pago mensual en PayPal.</p>
-                                <a href="${PAYPAL_SUBSCRIPTION_LINK}" target="_blank" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-2xl text-sm transition shadow-lg shadow-blue-600/20 block">Suscribirse con PayPal</a>
-                            </div>
-                        </main>
-                    `;
-                    return;
                 }
 
                 let products = [];
