@@ -184,7 +184,7 @@
 
       <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div class="min-w-0">
-          <span class="text-xs font-semibold text-slate-500 block">TU ENLACE ÚNICO TIPO SHOPIFY (COMPARTIBLE EN REDES)</span>
+          <span class="text-xs font-semibold text-slate-500 block">ENLACE ÚNICO DE ESTA TIENDA (COMPARTIBLE EN REDES)</span>
           <a id="adminUniqueLinkText" href="#" target="_blank" class="text-sm font-semibold text-blue-700 break-all hover:underline"></a>
         </div>
         <button id="copyUniqueLinkBtn" type="button" class="shrink-0 px-4 py-2 rounded-lg bg-blue-700 text-white text-sm font-medium hover:bg-blue-800">
@@ -708,6 +708,22 @@
         .replace(/^-+|-+$/g, "") || "tienda";
     }
 
+    function buildUniqueStoreSlug(storeName, uid) {
+      const baseSlug = slugify(storeName);
+      const shortUid = (uid || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8);
+      return shortUid ? `${baseSlug}-${shortUid}` : `${baseSlug}-${Date.now().toString(36)}`;
+    }
+
+    function getUniqueStoreUrl(storeData, uid) {
+      const slug = storeData?.storeSlug || buildUniqueStoreSlug(storeData?.storeName || "tienda", uid);
+      return `${window.location.origin}${window.location.pathname}?store=${encodeURIComponent(slug)}`;
+    }
+
+    function isUserSubscribed(user, storeData) {
+      const isExempt = (user?.email || "").toLowerCase() === ADMIN_EXEMPT_EMAIL;
+      return isExempt || storeData?.subscriptionActive === true;
+    }
+
     function applyStoreThemeToPage(theme = {}) {
       document.documentElement.style.setProperty("--cat-bg", theme.bg || "#f8fafc");
       document.documentElement.style.setProperty("--cat-primary", theme.primary || "#1d4ed8");
@@ -736,7 +752,7 @@
     }
 
     async function loadAdminProducts() {
-      if (!firebaseReady || !currentUser) return;
+      if (!firebaseReady || !currentUser || !isUserSubscribed(currentUser, currentStoreData)) return;
       const currency = currentStoreData?.currency || "USD";
       const q = query(collection(db, "products"), where("storeUid", "==", currentUser.uid));
       const snap = await getDocs(q);
@@ -814,23 +830,25 @@
           const snap = await getDoc(doc(db, "stores", currentUser.uid));
           currentStoreData = snap.exists() ? snap.data() : null;
         }
-        const isExempt = (currentUser.email || "").toLowerCase() === ADMIN_EXEMPT_EMAIL;
-        const isSubscribed = isExempt || currentStoreData?.subscriptionActive === true;
 
-        if (!isSubscribed) {
+        if (!isUserSubscribed(currentUser, currentStoreData)) {
           document.getElementById("btnOpenAdmin").classList.add("hidden");
+          const currMeta = window.__getCurrencyMeta(currentStoreData?.currency || "USD");
+          document.getElementById("gateCurrencyInfo").innerHTML =
+            `Esta app solo acepta pagos por medio de <strong>PayPal</strong>. Completa la suscripción de <strong>$20 USD/mes</strong> en PayPal para activar tu tienda. Tu catálogo mostrará sus precios en <strong>${currMeta.label}</strong>.`;
           showView("authView");
           document.getElementById("paypalGateBox").classList.remove("hidden");
-          showToast("Acceso bloqueado: tu suscripción no está activa.");
+          showToast("Acceso bloqueado: debes tener tu suscripción activa para entrar al panel.");
           return;
         }
 
         if (!currentStoreData) {
+          const uniqueSlug = buildUniqueStoreSlug(currentUser.email.split("@")[0], currentUser.uid);
           currentStoreData = {
             uid: currentUser.uid,
             email: currentUser.email,
             storeName: "Mi Tienda",
-            storeSlug: slugify(currentUser.email.split("@")[0]),
+            storeSlug: uniqueSlug,
             storeType: "Otros",
             currency: "USD",
             description: "Catálogo de productos",
@@ -847,6 +865,10 @@
             }
           };
           await setDoc(doc(db, "stores", currentUser.uid), currentStoreData);
+        } else if (!currentStoreData.storeSlug) {
+          const fixedSlug = buildUniqueStoreSlug(currentStoreData.storeName, currentUser.uid);
+          await updateDoc(doc(db, "stores", currentUser.uid), { storeSlug: fixedSlug });
+          currentStoreData.storeSlug = fixedSlug;
         }
 
         showView("adminView");
@@ -855,7 +877,7 @@
         document.getElementById("adminStoreTitle").textContent = currentStoreData.storeName;
         document.getElementById("adminStoreEmail").textContent = `Cuenta: ${currentStoreData.email} · Tipo: ${currentStoreData.storeType} · Moneda: ${currMeta.label}`;
 
-        const uniqueUrl = `${window.location.origin}${window.location.pathname}?store=${encodeURIComponent(currentStoreData.storeSlug)}`;
+        const uniqueUrl = getUniqueStoreUrl(currentStoreData, currentUser.uid);
         const linkEl = document.getElementById("adminUniqueLinkText");
         linkEl.href = uniqueUrl;
         linkEl.textContent = uniqueUrl;
@@ -1060,15 +1082,15 @@
         const currMeta = window.__getCurrencyMeta(currency);
         const description = document.getElementById("regDescription").value.trim();
         const sections = Array.from(document.querySelectorAll("#regSectionsBox .section-checkbox:checked")).map((el) => el.value);
-        const storeSlug = slugify(storeName);
         const isAdminExempt = email === ADMIN_EXEMPT_EMAIL;
 
         const cred = await createUserWithEmailAndPassword(auth, email, password);
+        const uniqueSlug = buildUniqueStoreSlug(storeName, cred.user.uid);
         const storeDoc = {
           uid: cred.user.uid,
           email,
           storeName,
-          storeSlug,
+          storeSlug: uniqueSlug,
           storeType,
           currency,
           description,
@@ -1091,6 +1113,7 @@
         currentStoreData = storeDoc;
 
         if (!isAdminExempt) {
+          document.getElementById("btnOpenAdmin").classList.add("hidden");
           document.getElementById("gateCurrencyInfo").innerHTML =
             `Esta app solo acepta pagos por medio de <strong>PayPal</strong>. La suscripción de la plataforma es de <strong>$20 USD/mes</strong> por PayPal, y tu catálogo mostrará sus precios en <strong>${currMeta.label}</strong> una vez activada.`;
           document.getElementById("paypalGateBox").classList.remove("hidden");
@@ -1116,7 +1139,10 @@
 
     document.getElementById("btnOpenAdmin").addEventListener("click", openAdminPanel);
     document.getElementById("viewPublicFromAdminBtn").addEventListener("click", () => {
-      if (currentStoreData?.storeSlug) viewPublicStore(currentStoreData.storeSlug);
+      if (currentStoreData && currentUser) {
+        const slug = currentStoreData.storeSlug || buildUniqueStoreSlug(currentStoreData.storeName, currentUser.uid);
+        viewPublicStore(slug);
+      }
     });
     document.getElementById("copyUniqueLinkBtn").addEventListener("click", () => {
       navigator.clipboard?.writeText(document.getElementById("adminUniqueLinkText").href);
@@ -1125,13 +1151,13 @@
     document.getElementById("brandHomeBtn").addEventListener("click", () => {
       const s = new URLSearchParams(window.location.search).get("store");
       if (s) viewPublicStore(s);
-      else if (currentUser && currentStoreData && (currentStoreData.subscriptionActive === true || (currentUser.email || "").toLowerCase() === ADMIN_EXEMPT_EMAIL)) openAdminPanel();
+      else if (currentUser && isUserSubscribed(currentUser, currentStoreData)) openAdminPanel();
       else showView("authView");
     });
 
     document.getElementById("storeSettingsForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      if (!firebaseReady || !currentUser) return;
+      if (!firebaseReady || !currentUser || !isUserSubscribed(currentUser, currentStoreData)) return;
       try {
         const storeName = document.getElementById("editStoreName").value.trim();
         const whatsapp = document.getElementById("editWhatsapp").value.trim().replace(/\D/g, "");
@@ -1149,19 +1175,20 @@
           titleSize: document.getElementById("sizeTitle").value,
           descSize: document.getElementById("sizeDesc").value
         };
-        const updated = { storeName, storeSlug: slugify(storeName), whatsapp, storeType, currency, description, sections: finalSections, theme };
+        const uniqueSlug = buildUniqueStoreSlug(storeName, currentUser.uid);
+        const updated = { storeName, storeSlug: uniqueSlug, whatsapp, storeType, currency, description, sections: finalSections, theme };
         await updateDoc(doc(db, "stores", currentUser.uid), updated);
         currentStoreData = { ...currentStoreData, ...updated };
         applyStoreThemeToPage(theme);
         populateProductCategorySelect(finalSections);
         window.__updateDiscountPreview(currency);
-        const uniqueUrl = `${window.location.origin}${window.location.pathname}?store=${encodeURIComponent(currentStoreData.storeSlug)}`;
+        const uniqueUrl = getUniqueStoreUrl(currentStoreData, currentUser.uid);
         document.getElementById("adminStoreTitle").textContent = storeName;
         document.getElementById("adminStoreEmail").textContent = `Cuenta: ${currentStoreData.email} · Tipo: ${storeType} · Moneda: ${currMeta.label}`;
         document.getElementById("adminUniqueLinkText").href = uniqueUrl;
         document.getElementById("adminUniqueLinkText").textContent = uniqueUrl;
         await loadAdminProducts();
-        showToast("Configuración guardada y actualizada.");
+        showToast("Configuración guardada y enlace único actualizado.");
       } catch (err) {
         showToast("Error al guardar configuración: " + formatFirebaseError(err));
       }
@@ -1189,7 +1216,7 @@
 
     document.getElementById("productForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      if (!firebaseReady || !currentUser) return;
+      if (!firebaseReady || !currentUser || !isUserSubscribed(currentUser, currentStoreData)) return;
       try {
         const editingId = document.getElementById("editingProductId").value;
         const price = parseFloat(document.getElementById("prodPrice").value) || 0;
@@ -1293,8 +1320,7 @@
           showToast("Aviso al leer tienda: " + formatFirebaseError(err));
         }
 
-        const isExempt = (user.email || "").toLowerCase() === ADMIN_EXEMPT_EMAIL;
-        const hasActiveSub = isExempt || currentStoreData?.subscriptionActive === true;
+        const hasActiveSub = isUserSubscribed(user, currentStoreData);
 
         badge.textContent = user.email;
         badge.classList.remove("hidden");
