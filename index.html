@@ -155,7 +155,7 @@
         <div class="bg-blue-50 border border-blue-200 rounded-2xl p-6">
           <h3 class="text-lg font-bold text-blue-950 mb-2">Suscripción requerida para acceder al panel ($20 USD/mes)</h3>
           <p id="gateCurrencyInfo" class="text-sm text-blue-900 mb-4">
-            Esta app solo acepta pagos por medio de <strong>PayPal</strong>. Completa la suscripción de <strong>$20 USD/mes</strong> en PayPal para activar tu tienda. Mientras tu suscripción no esté activa, el acceso al panel permanece bloqueado.
+            Esta app solo acepta pagos por medio de <strong>PayPal</strong>. Debes suscribirte al plan de <strong>$20 USD/mes</strong> en PayPal para poder entrar al panel. Si no estás suscrito, el acceso al panel está bloqueado.
           </p>
           <div class="flex flex-wrap gap-3 items-center">
             <a href="https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-65D64792V6625121KNL7VKOQ" target="_blank" rel="noopener noreferrer"
@@ -389,7 +389,7 @@
     </div>
   </section>
 
-  <!-- VISTA 3: CATÁLOGO PÚBLICO (ACCESO LIBRE SIN CUENTA NI SUSCRIPCIÓN) -->
+  <!-- VISTA 3: CATÁLOGO PÚBLICO (SOLO TIENDA, SIN PANEL NI CUENTAS) -->
   <section id="storefrontView" class="hidden max-w-7xl mx-auto px-4 py-8 space-y-8">
     <div id="storeHeroBanner" class="rounded-2xl bg-white border border-slate-200 p-6 sm:p-10 shadow-sm">
       <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
@@ -496,6 +496,10 @@
       "Otros": ["Todos", "Destacados", "Novedades", "Ofertas"]
     };
 
+    function getRequestedStoreSlug() {
+      return (new URLSearchParams(window.location.search).get("store") || "").trim().toLowerCase();
+    }
+
     function populateCurrencySelects() {
       const html = WORLD_CURRENCIES.map((c) => `<option value="${c.code}">${c.label}</option>`).join("");
       const regSel = document.getElementById("regCurrency");
@@ -518,6 +522,7 @@
     window.__formatCurrencyAmount = formatCurrencyAmount;
 
     function showToast(msg) {
+      if (getRequestedStoreSlug()) return;
       const box = document.getElementById("toastBox");
       if (!box) return;
       box.textContent = msg;
@@ -527,6 +532,16 @@
     }
 
     function showView(viewId) {
+      if (getRequestedStoreSlug()) {
+        viewId = "storefrontView";
+      } else if (viewId === "adminView" && (!window.__canAccessAdmin || !window.__canAccessAdmin())) {
+        viewId = "authView";
+        const gate = document.getElementById("paypalGateBox");
+        if (gate) gate.classList.remove("hidden");
+        const adminBtn = document.getElementById("btnOpenAdmin");
+        if (adminBtn) adminBtn.classList.add("hidden");
+      }
+
       ["authView", "adminView", "storefrontView"].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.classList.add("hidden");
@@ -535,8 +550,10 @@
       if (target) target.classList.remove("hidden");
 
       const isPublicStore = viewId === "storefrontView";
+      const header = document.getElementById("mainHeader");
       const banner = document.getElementById("platformNoticeBanner");
       const authControls = document.getElementById("headerAuthControls");
+      if (header) header.classList.toggle("hidden", isPublicStore);
       if (banner) banner.classList.toggle("hidden", isPublicStore);
       if (authControls) authControls.classList.toggle("hidden", isPublicStore);
     }
@@ -640,7 +657,9 @@
 
     populateCurrencySelects();
     syncSectionsByStoreType(document.getElementById("regStoreType").value, "regSectionsBox");
-    if (!new URLSearchParams(window.location.search).get("store")) {
+    if (getRequestedStoreSlug()) {
+      showView("storefrontView");
+    } else {
       showView("authView");
       switchAuthTab("login");
     }
@@ -720,9 +739,12 @@
     }
 
     function isUserSubscribed(user, storeData) {
-      const isExempt = (user?.email || "").toLowerCase() === ADMIN_EXEMPT_EMAIL;
+      if (!user) return false;
+      const isExempt = (user.email || "").toLowerCase() === ADMIN_EXEMPT_EMAIL;
       return isExempt || storeData?.subscriptionActive === true;
     }
+
+    window.__canAccessAdmin = () => isUserSubscribed(currentUser, currentStoreData);
 
     function applyStoreThemeToPage(theme = {}) {
       document.documentElement.style.setProperty("--cat-bg", theme.bg || "#f8fafc");
@@ -824,6 +846,10 @@
     }
 
     async function openAdminPanel() {
+      if (new URLSearchParams(window.location.search).get("store")) {
+        showView("storefrontView");
+        return;
+      }
       if (!firebaseReady || !currentUser) return;
       try {
         if (!currentStoreData) {
@@ -835,10 +861,10 @@
           document.getElementById("btnOpenAdmin").classList.add("hidden");
           const currMeta = window.__getCurrencyMeta(currentStoreData?.currency || "USD");
           document.getElementById("gateCurrencyInfo").innerHTML =
-            `Esta app solo acepta pagos por medio de <strong>PayPal</strong>. Completa la suscripción de <strong>$20 USD/mes</strong> en PayPal para activar tu tienda. Tu catálogo mostrará sus precios en <strong>${currMeta.label}</strong>.`;
+            `Esta app solo acepta pagos por medio de <strong>PayPal</strong>. Debes suscribirte al plan de <strong>$20 USD/mes</strong> en PayPal para poder entrar al panel. Si no estás suscrito, el acceso al panel está bloqueado. Tu catálogo mostrará sus precios en <strong>${currMeta.label}</strong>.`;
           showView("authView");
           document.getElementById("paypalGateBox").classList.remove("hidden");
-          showToast("Acceso bloqueado: debes tener tu suscripción activa para entrar al panel.");
+          showToast("Acceso bloqueado: no tienes una suscripción activa.");
           return;
         }
 
@@ -1015,13 +1041,16 @@
     }
 
     async function viewPublicStore(slug) {
-      if (!firebaseReady || !slug) return;
+      const cleanSlug = (slug || "").trim().toLowerCase();
+      if (!firebaseReady || !cleanSlug) return;
       try {
-        const q = query(collection(db, "stores"), where("storeSlug", "==", slug));
+        showView("storefrontView");
+        const q = query(collection(db, "stores"), where("storeSlug", "==", cleanSlug));
         const snap = await getDocs(q);
         if (snap.empty) {
-          showToast("Tienda no encontrada.");
-          showView("authView");
+          document.getElementById("publicStoreName").textContent = "Catálogo no disponible";
+          document.getElementById("publicStoreDesc").textContent = "Este enlace de tienda no existe o aún no ha sido guardado.";
+          document.getElementById("publicProductsGrid").innerHTML = "";
           return;
         }
         const storeDoc = snap.docs[0];
@@ -1041,9 +1070,9 @@
         selectedPublicSection = "Todos";
         renderPublicSectionsBar();
         renderPublicCatalog();
-        showView("storefrontView");
       } catch (err) {
-        showToast("Error al cargar catálogo: " + formatFirebaseError(err));
+        document.getElementById("publicStoreName").textContent = "Error al cargar catálogo";
+        document.getElementById("publicStoreDesc").textContent = formatFirebaseError(err);
       }
     }
 
@@ -1115,9 +1144,10 @@
         if (!isAdminExempt) {
           document.getElementById("btnOpenAdmin").classList.add("hidden");
           document.getElementById("gateCurrencyInfo").innerHTML =
-            `Esta app solo acepta pagos por medio de <strong>PayPal</strong>. La suscripción de la plataforma es de <strong>$20 USD/mes</strong> por PayPal, y tu catálogo mostrará sus precios en <strong>${currMeta.label}</strong> una vez activada.`;
+            `Esta app solo acepta pagos por medio de <strong>PayPal</strong>. Debes suscribirte al plan de <strong>$20 USD/mes</strong> en PayPal para poder entrar al panel. Si no estás suscrito, el acceso al panel está bloqueado. Tu catálogo mostrará sus precios en <strong>${currMeta.label}</strong>.`;
           document.getElementById("paypalGateBox").classList.remove("hidden");
-          showToast("Cuenta creada con suscripción inactiva. Completa el pago en PayPal.");
+          showView("authView");
+          showToast("Cuenta creada sin suscripción activa. El acceso al panel está bloqueado hasta suscribirte.");
         } else {
           showToast("¡Bienvenido! Acceso de administrador activado.");
           await openAdminPanel();
@@ -1141,7 +1171,7 @@
     document.getElementById("viewPublicFromAdminBtn").addEventListener("click", () => {
       if (currentStoreData && currentUser) {
         const slug = currentStoreData.storeSlug || buildUniqueStoreSlug(currentStoreData.storeName, currentUser.uid);
-        viewPublicStore(slug);
+        window.open(getUniqueStoreUrl(currentStoreData, currentUser.uid), "_blank", "noopener,noreferrer");
       }
     });
     document.getElementById("copyUniqueLinkBtn").addEventListener("click", () => {
@@ -1157,7 +1187,10 @@
 
     document.getElementById("storeSettingsForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      if (!firebaseReady || !currentUser || !isUserSubscribed(currentUser, currentStoreData)) return;
+      if (!firebaseReady || !currentUser || !isUserSubscribed(currentUser, currentStoreData)) {
+        showToast("Acceso denegado: no tienes una suscripción activa.");
+        return;
+      }
       try {
         const storeName = document.getElementById("editStoreName").value.trim();
         const whatsapp = document.getElementById("editWhatsapp").value.trim().replace(/\D/g, "");
@@ -1216,7 +1249,10 @@
 
     document.getElementById("productForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      if (!firebaseReady || !currentUser || !isUserSubscribed(currentUser, currentStoreData)) return;
+      if (!firebaseReady || !currentUser || !isUserSubscribed(currentUser, currentStoreData)) {
+        showToast("Acceso denegado: no tienes una suscripción activa.");
+        return;
+      }
       try {
         const editingId = document.getElementById("editingProductId").value;
         const price = parseFloat(document.getElementById("prodPrice").value) || 0;
@@ -1296,19 +1332,23 @@
 
       onAuthStateChanged(auth, async (user) => {
         currentUser = user;
+        if (new URLSearchParams(window.location.search).get("store")) {
+          showView("storefrontView");
+          return;
+        }
+
         const badge = document.getElementById("userSessionBadge");
         const btnAdmin = document.getElementById("btnOpenAdmin");
         const btnLogout = document.getElementById("btnLogout");
         const btnAuth = document.getElementById("btnOpenAuth");
 
         if (!user) {
+          currentStoreData = null;
           badge.classList.add("hidden");
           btnAdmin.classList.add("hidden");
           btnLogout.classList.add("hidden");
           btnAuth.classList.remove("hidden");
-          if (!new URLSearchParams(window.location.search).get("store")) {
-            showView("authView");
-          }
+          showView("authView");
           return;
         }
 
@@ -1329,21 +1369,17 @@
 
         if (!hasActiveSub) {
           btnAdmin.classList.add("hidden");
-          if (!new URLSearchParams(window.location.search).get("store")) {
-            const currMeta = window.__getCurrencyMeta(currentStoreData?.currency || "USD");
-            document.getElementById("gateCurrencyInfo").innerHTML =
-              `Esta app solo acepta pagos por medio de <strong>PayPal</strong>. La suscripción de la plataforma es de <strong>$20 USD/mes</strong> por PayPal, y tu catálogo mostrará sus precios en <strong>${currMeta.label}</strong> una vez activada.`;
-            showView("authView");
-            document.getElementById("paypalGateBox").classList.remove("hidden");
-            showToast("Acceso bloqueado: completa tu suscripción de $20 USD/mes vía PayPal.");
-          }
+          const currMeta = window.__getCurrencyMeta(currentStoreData?.currency || "USD");
+          document.getElementById("gateCurrencyInfo").innerHTML =
+            `Esta app solo acepta pagos por medio de <strong>PayPal</strong>. Debes suscribirte al plan de <strong>$20 USD/mes</strong> en PayPal para poder entrar al panel. Si no estás suscrito, el acceso al panel está bloqueado. Tu catálogo mostrará sus precios en <strong>${currMeta.label}</strong>.`;
+          showView("authView");
+          document.getElementById("paypalGateBox").classList.remove("hidden");
+          showToast("Acceso bloqueado: debes suscribirte para entrar al panel.");
           return;
         }
 
         btnAdmin.classList.remove("hidden");
-        if (!new URLSearchParams(window.location.search).get("store")) {
-          await openAdminPanel();
-        }
+        await openAdminPanel();
       });
     } catch (err) {
       firebaseReady = false;
