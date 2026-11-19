@@ -8,9 +8,7 @@
   <style>
     :root {
       --cat-bg: #f8fafc;
-      --cat-surface: #ffffff;
       --cat-primary: #1d4ed8;
-      --cat-accent: #16a34a;
       --cat-title-color: #0f172a;
       --cat-desc-color: #475569;
       --cat-title-size: 2.15rem;
@@ -32,58 +30,50 @@
 </head>
 <body class="text-slate-800 antialiased">
 
-  <!-- Barra superior de navegación -->
   <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
     <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-2">
-        <button onclick="goHome()" class="flex items-center gap-2 text-left">
-          <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-blue-700 text-white font-bold">TC</span>
-          <div>
-            <span class="font-bold text-slate-900 block leading-tight">Taste Catálogo</span>
-            <span class="text-xs text-slate-500">Tiendas Digitales en la Nube</span>
-          </div>
-        </button>
-      </div>
+      <button type="button" id="brandHomeBtn" class="flex items-center gap-2 text-left">
+        <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-blue-700 text-white font-bold">TC</span>
+        <div>
+          <span class="font-bold text-slate-900 block leading-tight">Taste Catálogo</span>
+          <span class="text-xs text-slate-500">Tiendas Digitales en la Nube</span>
+        </div>
+      </button>
 
       <div class="flex items-center gap-2 flex-wrap">
         <span id="userSessionBadge" class="hidden text-xs bg-slate-100 text-slate-700 px-3 py-1.5 rounded-full"></span>
-        <button id="btnOpenAuth" onclick="showView('authView')" class="px-3.5 py-2 text-sm font-medium rounded-lg bg-blue-700 text-white hover:bg-blue-800 transition">
+        <button id="btnOpenAuth" type="button" class="px-3.5 py-2 text-sm font-medium rounded-lg bg-blue-700 text-white hover:bg-blue-800 transition">
           Iniciar sesión / Crear tienda
         </button>
-        <button id="btnOpenAdmin" onclick="openAdminPanel()" class="hidden px-3.5 py-2 text-sm font-medium rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition">
+        <button id="btnOpenAdmin" type="button" class="hidden px-3.5 py-2 text-sm font-medium rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition">
           Mi Panel
         </button>
-        <button id="btnLogout" onclick="logoutUser()" class="hidden px-3.5 py-2 text-sm font-medium rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 transition">
+        <button id="btnLogout" type="button" class="hidden px-3.5 py-2 text-sm font-medium rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 transition">
           Cerrar sesión
         </button>
       </div>
     </div>
   </header>
 
-  <!-- Aviso global de método de pago -->
   <div class="bg-amber-50 border-b border-amber-200 text-amber-950 text-xs sm:text-sm py-2 px-4 text-center">
     <strong>Nota:</strong> Esta app solo acepta pagos por medio de <strong>PayPal</strong>. Para activar tu suscripción y publicar tu catálogo, debes pagar tu plan mensual de <strong>$20 USD</strong> vía PayPal.
   </div>
 
-  <!-- Notificaciones toast -->
   <div id="toastBox" class="fixed bottom-5 right-5 z-50 hidden max-w-sm bg-slate-900 text-white text-sm px-4 py-3 rounded-xl shadow-lg"></div>
 
-  <!-- ===================================================================== -->
-  <!-- VISTA 1: ACCESO / REGISTRO / SUSCRIPCIÓN PAYPAL ($20/MES)           -->
-  <!-- ===================================================================== -->
-  <section id="authView" class="hidden max-w-4xl mx-auto px-4 py-10">
+  <!-- VISTA 1: ACCESO / REGISTRO / SUSCRIPCIÓN PAYPAL -->
+  <section id="authView" class="max-w-4xl mx-auto px-4 py-10">
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8">
-      <div class="flex gap-2 mb-6 border-b border-slate-200 pb-4">
-        <button id="tabLogin" onclick="switchAuthTab('login')" class="px-4 py-2 rounded-lg text-sm font-semibold bg-blue-700 text-white">
+      <div class="flex gap-2 mb-6 border-b border-slate-200 pb-4 flex-wrap">
+        <button id="tabLogin" type="button" class="px-4 py-2 rounded-lg text-sm font-semibold bg-blue-700 text-white">
           Iniciar sesión
         </button>
-        <button id="tabRegister" onclick="switchAuthTab('register')" class="px-4 py-2 rounded-lg text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200">
+        <button id="tabRegister" type="button" class="px-4 py-2 rounded-lg text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200">
           Crear cuenta de tienda ($20/mes)
         </button>
       </div>
 
-      <!-- Formulario Iniciar Sesión -->
-      <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4 max-w-md">
+      <form id="loginForm" class="space-y-4 max-w-md">
         <h2 class="text-xl font-bold text-slate-900">Inicia sesión en tu tienda</h2>
         <div>
           <label class="block text-sm font-medium text-slate-700 mb-1">Correo electrónico</label>
@@ -93,13 +83,12 @@
           <label class="block text-sm font-medium text-slate-700 mb-1">Contraseña</label>
           <input id="loginPassword" type="password" required class="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm" placeholder="••••••••" />
         </div>
-        <button type="submit" class="w-full py-2.5 px-4 rounded-lg bg-blue-700 text-white font-semibold text-sm hover:bg-blue-800 transition">
+        <button id="loginSubmitBtn" type="submit" class="w-full py-2.5 px-4 rounded-lg bg-blue-700 text-white font-semibold text-sm hover:bg-blue-800 transition">
           Entrar al panel
         </button>
       </form>
 
-      <!-- Formulario Crear Cuenta -->
-      <form id="registerForm" onsubmit="handleRegister(event)" class="hidden space-y-4">
+      <form id="registerForm" class="hidden space-y-4">
         <h2 class="text-xl font-bold text-slate-900">Crea tu tienda con enlace único tipo Shopify</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
@@ -120,7 +109,7 @@
           </div>
           <div class="sm:col-span-2">
             <label class="block text-sm font-medium text-slate-700 mb-1">Tipo de tienda *</label>
-            <select id="regStoreType" onchange="syncSectionsByStoreType(this.value, 'regSectionsBox')" class="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm bg-white">
+            <select id="regStoreType" class="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm bg-white">
               <option value="Ropa y Moda">Ropa y Moda</option>
               <option value="Calzado y Zapatos">Calzado y Zapatos</option>
               <option value="Tecnología y Celulares">Tecnología y Celulares</option>
@@ -148,18 +137,16 @@
           </div>
         </div>
 
-        <!-- Secciones seleccionables según el tipo de tienda -->
         <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
           <p class="text-sm font-semibold text-slate-800 mb-2">Elige las secciones en las que se dividirá tu catálogo:</p>
           <div id="regSectionsBox" class="flex flex-wrap gap-2"></div>
         </div>
 
-        <button type="submit" class="w-full py-3 px-4 rounded-lg bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700 transition">
+        <button id="registerSubmitBtn" type="submit" class="w-full py-3 px-4 rounded-lg bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700 transition">
           Crear cuenta y continuar a suscripción PayPal ($20/mes)
         </button>
       </form>
 
-      <!-- Bloque de Suscripción PayPal Obligatoria -->
       <div id="paypalGateBox" class="hidden mt-8 border-t border-slate-200 pt-6">
         <div class="bg-blue-50 border border-blue-200 rounded-2xl p-6">
           <h3 class="text-lg font-bold text-blue-950 mb-2">Activa tu suscripción mensual ($20 USD/mes) por PayPal</h3>
@@ -171,7 +158,7 @@
                class="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-[#0070ba] hover:bg-[#005ea6] text-white font-semibold text-sm transition">
               Suscribirse en PayPal ($20/mes)
             </a>
-            <button onclick="confirmSubscriptionActivation()" class="px-5 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm transition">
+            <button id="confirmSubBtn" type="button" class="px-5 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm transition">
               Ya completé mi suscripción en PayPal
             </button>
           </div>
@@ -180,11 +167,8 @@
     </div>
   </section>
 
-  <!-- ===================================================================== -->
-  <!-- VISTA 2: PANEL DE ADMINISTRACIÓN DE LA TIENDA                         -->
-  <!-- ===================================================================== -->
+  <!-- VISTA 2: PANEL DE ADMINISTRACIÓN -->
   <section id="adminView" class="hidden max-w-6xl mx-auto px-4 py-8 space-y-8">
-    <!-- Encabezado del panel + Enlace único tipo Shopify -->
     <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
       <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
         <div>
@@ -192,7 +176,7 @@
           <h2 id="adminStoreTitle" class="text-2xl font-bold text-slate-900 mt-2">Mi Tienda</h2>
           <p id="adminStoreEmail" class="text-sm text-slate-500"></p>
         </div>
-        <button onclick="viewPublicStore(currentStoreData.storeSlug)" class="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-medium hover:bg-slate-800">
+        <button id="viewPublicFromAdminBtn" type="button" class="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-medium hover:bg-slate-800">
           Ver catálogo público
         </button>
       </div>
@@ -202,14 +186,13 @@
           <span class="text-xs font-semibold text-slate-500 block">TU ENLACE ÚNICO TIPO SHOPIFY (COMPARTIBLE EN REDES)</span>
           <a id="adminUniqueLinkText" href="#" target="_blank" class="text-sm font-semibold text-blue-700 break-all hover:underline"></a>
         </div>
-        <button onclick="copyUniqueLink()" class="shrink-0 px-4 py-2 rounded-lg bg-blue-700 text-white text-sm font-medium hover:bg-blue-800">
+        <button id="copyUniqueLinkBtn" type="button" class="shrink-0 px-4 py-2 rounded-lg bg-blue-700 text-white text-sm font-medium hover:bg-blue-800">
           Copiar enlace
         </button>
       </div>
     </div>
 
-    <!-- Configurar Datos de la Tienda, Colores, Tipografía y Secciones -->
-    <form id="storeSettingsForm" onsubmit="saveStoreSettings(event)" class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
+    <form id="storeSettingsForm" class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
       <h3 class="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">1. Datos de la Tienda, Colores, Letras y Secciones</h3>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -223,7 +206,7 @@
         </div>
         <div>
           <label class="block text-sm font-medium text-slate-700 mb-1">Tipo de tienda</label>
-          <select id="editStoreType" onchange="syncSectionsByStoreType(this.value, 'editSectionsBox')" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white">
+          <select id="editStoreType" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white">
             <option value="Ropa y Moda">Ropa y Moda</option>
             <option value="Calzado y Zapatos">Calzado y Zapatos</option>
             <option value="Tecnología y Celulares">Tecnología y Celulares</option>
@@ -251,16 +234,15 @@
         </div>
       </div>
 
-      <!-- Paletas rápidas + Colores personalizados y tamaño de letra -->
       <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <span class="text-sm font-semibold text-slate-800">Estilo visual y colores del catálogo:</span>
           <div class="flex flex-wrap gap-2">
-            <button type="button" onclick="applyThemePreset('azul-blanco')" class="px-2.5 py-1 text-xs rounded-md bg-blue-700 text-white">Azul y Blanco</button>
-            <button type="button" onclick="applyThemePreset('amarillo-negro')" class="px-2.5 py-1 text-xs rounded-md bg-amber-400 text-slate-950 font-semibold">Amarillo y Negro</button>
-            <button type="button" onclick="applyThemePreset('rojo-negro')" class="px-2.5 py-1 text-xs rounded-md bg-red-600 text-white">Rojo y Negro</button>
-            <button type="button" onclick="applyThemePreset('rojo-azul')" class="px-2.5 py-1 text-xs rounded-md bg-gradient-to-r from-red-600 to-blue-700 text-white">Rojo y Azul</button>
-            <button type="button" onclick="applyThemePreset('verde-esmeralda')" class="px-2.5 py-1 text-xs rounded-md bg-emerald-600 text-white">Verde Esmeralda</button>
+            <button type="button" data-preset="azul-blanco" class="theme-preset-btn px-2.5 py-1 text-xs rounded-md bg-blue-700 text-white">Azul y Blanco</button>
+            <button type="button" data-preset="amarillo-negro" class="theme-preset-btn px-2.5 py-1 text-xs rounded-md bg-amber-400 text-slate-950 font-semibold">Amarillo y Negro</button>
+            <button type="button" data-preset="rojo-negro" class="theme-preset-btn px-2.5 py-1 text-xs rounded-md bg-red-600 text-white">Rojo y Negro</button>
+            <button type="button" data-preset="rojo-azul" class="theme-preset-btn px-2.5 py-1 text-xs rounded-md bg-gradient-to-r from-red-600 to-blue-700 text-white">Rojo y Azul</button>
+            <button type="button" data-preset="verde-esmeralda" class="theme-preset-btn px-2.5 py-1 text-xs rounded-md bg-emerald-600 text-white">Verde Esmeralda</button>
           </div>
         </div>
 
@@ -302,13 +284,12 @@
         </div>
       </div>
 
-      <!-- Secciones activas de la tienda -->
       <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-3">
         <p class="text-sm font-semibold text-slate-800">Secciones de tu catálogo (según tu tipo de tienda):</p>
         <div id="editSectionsBox" class="flex flex-wrap gap-2"></div>
         <div class="flex gap-2 pt-1">
           <input id="newCustomSectionInput" type="text" placeholder="Añadir otra sección (ej: Pantis, Tablas, Bizcochos...)" class="flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm bg-white" />
-          <button type="button" onclick="addCustomSectionToEdit()" class="px-3.5 py-1.5 rounded-lg bg-slate-800 text-white text-sm font-medium hover:bg-slate-700">
+          <button id="addCustomSectionBtn" type="button" class="px-3.5 py-1.5 rounded-lg bg-slate-800 text-white text-sm font-medium hover:bg-slate-700">
             + Añadir sección
           </button>
         </div>
@@ -319,9 +300,893 @@
       </button>
     </form>
 
-    <!-- Añadir / Editar Producto -->
-    <form id="productForm" onsubmit="saveProduct(event)" class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+    <form id="productForm" class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-        <h3 id="productForm
+        <h3 id="productFormTitle" class="text-lg font-bold text-slate-900">2. Añadir Producto al Catálogo</h3>
+        <button type="button" id="cancelEditProdBtn" class="hidden text-xs text-red-600 font-semibold hover:underline">
+          Cancelar edición
+        </button>
+      </div>
 
+      <input type="hidden" id="editingProductId" />
 
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Nombre del producto *</label>
+          <input id="prodName" type="text" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Ej: Nintendo Switch" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Precio base ($) *</label>
+          <input id="prodPrice" type="number" step="0.01" min="0" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="100" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Descuento (%)</label>
+          <input id="prodDiscount" type="number" step="1" min="0" max="99" value="0" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Ej: 5" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Stock disponible *</label>
+          <input id="prodStock" type="number" min="0" value="1" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Talla (opcional, puede ir vacía)</label>
+          <input id="prodSize" type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Ej: M, L, XL o vacío" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Color del producto</label>
+          <input id="prodColor" type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Ej: Azul neón, Negro" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Tipo de producto</label>
+          <input id="prodType" type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Ej: Consola, Camisa, Postre" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Categoría / Sección *</label>
+          <select id="prodCategory" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white"></select>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-sm font-medium text-slate-700 mb-1">Imagen del producto (URL o subir archivo)</label>
+          <div class="flex gap-2">
+            <input id="prodImageUrl" type="url" class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="https://..." />
+            <input id="prodImageFile" type="file" accept="image/*" class="text-xs w-44" />
+          </div>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-sm font-medium text-slate-700 mb-1">Descripción del producto *</label>
+          <input id="prodDesc" type="text" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Detalles clave del producto..." />
+        </div>
+      </div>
+
+      <div id="discountPreviewText" class="text-xs text-slate-600 bg-slate-50 px-3 py-2 rounded-lg">
+        Precio final calculado: <strong>$0.00</strong>
+      </div>
+
+      <button type="submit" class="px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700 transition">
+        Guardar cambios y publicar en catálogo
+      </button>
+    </form>
+
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+      <h3 class="text-lg font-bold text-slate-900 mb-4">3. Productos de tu Tienda (<span id="adminProductCount">0</span>)</h3>
+      <div id="adminProductsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+      <h3 class="text-lg font-bold text-slate-900 mb-1">4. Buzón de Sugerencias y Soporte</h3>
+      <p class="text-sm text-slate-600 mb-4">
+        ¿Tienes alguna duda, sugerencia o reporte de error? Escríbenos directo al administrador (<strong>tastess07@gmail.com</strong>).
+      </p>
+      <form id="suggestionForm" class="space-y-3 max-w-2xl">
+        <textarea id="suggestionText" rows="3" required placeholder="Escribe aquí tu sugerencia, duda o reporte..." class="w-full rounded-lg border border-slate-300 p-3 text-sm"></textarea>
+        <button type="submit" class="px-5 py-2.5 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800">
+          Enviar mensaje a tastess07@gmail.com
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <!-- VISTA 3: CATÁLOGO PÚBLICO -->
+  <section id="storefrontView" class="hidden max-w-7xl mx-auto px-4 py-8 space-y-8">
+    <div id="storeHeroBanner" class="rounded-2xl bg-white border border-slate-200 p-6 sm:p-10 shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <span id="storeTypeBadge" class="inline-block text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-slate-100 text-slate-700">
+          CATÁLOGO OFICIAL
+        </span>
+        <span class="text-xs text-slate-500">Enlace único de tienda</span>
+      </div>
+      <h1 id="publicStoreName" class="store-title-dynamic font-extrabold tracking-tight mb-2">Nombre de la Tienda</h1>
+      <p id="publicStoreDesc" class="store-desc-dynamic max-w-3xl">Descripción de la tienda</p>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+      <div class="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+        <div class="relative flex-1">
+          <input id="publicSearchInput" type="search" placeholder="Buscar producto por nombre, color, talla o descripción..."
+                 class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600" />
+        </div>
+        <div class="text-xs text-slate-500">
+          Mostrando <strong id="visibleProductsCount">0</strong> productos
+        </div>
+      </div>
+
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Secciones de la tienda:</p>
+        <div id="publicSectionsBar" class="flex gap-2 overflow-x-auto pb-2"></div>
+      </div>
+    </div>
+
+    <div id="publicProductsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+  </section>
+
+  <!-- MODAL DETALLE AMPLIADO -->
+  <div id="productModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl border border-slate-200">
+      <div class="flex justify-between items-center px-5 py-3.5 border-b border-slate-100">
+        <span id="modalCategoryTag" class="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-slate-100 text-slate-700"></span>
+        <button id="closeModalBtn" type="button" class="text-slate-500 hover:text-slate-900 font-bold text-lg px-2">✕</button>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
+        <div class="bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center min-h-[240px]">
+          <img id="modalImg" src="" alt="" class="w-full h-64 object-cover" />
+        </div>
+        <div class="flex flex-col justify-between space-y-4">
+          <div class="space-y-2">
+            <h3 id="modalName" class="text-2xl font-bold text-slate-900"></h3>
+            <div id="modalPriceBox" class="flex items-center gap-2 flex-wrap"></div>
+            <p id="modalDesc" class="text-sm text-slate-600 leading-relaxed"></p>
+            <div class="text-xs text-slate-700 space-y-1 pt-2 border-t border-slate-100">
+              <p><strong>Stock:</strong> <span id="modalStock"></span></p>
+              <p id="modalSizeRow"><strong>Talla:</strong> <span id="modalSize"></span></p>
+              <p><strong>Color:</strong> <span id="modalColor"></span></p>
+              <p><strong>Tipo:</strong> <span id="modalType"></span></p>
+            </div>
+          </div>
+          <div id="modalActionBox" class="pt-2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT PRINCIPAL DE INTERFAZ -->
+  <script>
+    const DEFAULT_SECTIONS_BY_TYPE = {
+      "Ropa y Moda": ["Todos", "Polochés", "Camisas", "Blusas", "Pantalones", "Pantalón corto", "Sweaters", "Pantis"],
+      "Calzado y Zapatos": ["Todos", "Tenis / Sneakers", "Sandalias", "Formales", "Botas", "Escolares"],
+      "Tecnología y Celulares": ["Todos", "Teléfonos", "Laptops", "Tablas / Tablets", "Audífonos", "Cargadores y Accesorios"],
+      "Videojuegos y Consolas": ["Todos", "Consolas", "Juegos", "Controles", "PC / Laptops", "Accesorios Gamer"],
+      "Supermercado y Abarrotes": ["Todos", "Lácteos", "Frutas", "Dulces", "Salados", "Pasteles", "Bizcochos", "Cervezas", "Bebidas"],
+      "Comida y Restaurante": ["Todos", "Platos Principales", "Comida Rápida", "Bebidas", "Postres", "Combos"],
+      "Repostería, Pasteles y Dulces": ["Todos", "Pasteles", "Bizcochos", "Cupcakes", "Dulces", "Galletas"],
+      "Bebidas, Cervezas y Licores": ["Todos", "Cervezas", "Refrescos / Jugos", "Vinos y Licores", "Agua y Hielo"],
+      "Lencería": ["Todos", "Pantis", "Brasieres", "Conjuntos", "Pijamas"],
+      "Farmacia y Salud": ["Todos", "Cuidado Personal", "Vitaminas", "Primeros Auxilios", "Higiene"],
+      "Otros": ["Todos", "Destacados", "Novedades", "Ofertas"]
+    };
+
+    function showToast(msg) {
+      const box = document.getElementById("toastBox");
+      if (!box) return;
+      box.textContent = msg;
+      box.classList.remove("hidden");
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => box.classList.add("hidden"), 4500);
+    }
+
+    function showView(viewId) {
+      ["authView", "adminView", "storefrontView"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add("hidden");
+      });
+      const target = document.getElementById(viewId);
+      if (target) target.classList.remove("hidden");
+    }
+
+    function switchAuthTab(tab) {
+      const isLogin = tab === "login";
+      document.getElementById("loginForm").classList.toggle("hidden", !isLogin);
+      document.getElementById("registerForm").classList.toggle("hidden", isLogin);
+      document.getElementById("tabLogin").className = isLogin
+        ? "px-4 py-2 rounded-lg text-sm font-semibold bg-blue-700 text-white"
+        : "px-4 py-2 rounded-lg text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200";
+      document.getElementById("tabRegister").className = !isLogin
+        ? "px-4 py-2 rounded-lg text-sm font-semibold bg-blue-700 text-white"
+        : "px-4 py-2 rounded-lg text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200";
+    }
+
+    function syncSectionsByStoreType(storeType, containerId, selectedSections) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const baseList = DEFAULT_SECTIONS_BY_TYPE[storeType] || DEFAULT_SECTIONS_BY_TYPE["Otros"];
+      const list = selectedSections && selectedSections.length
+        ? Array.from(new Set(["Todos", ...baseList, ...selectedSections]))
+        : baseList;
+
+      container.innerHTML = "";
+      list.forEach((sec) => {
+        const isChecked = selectedSections ? selectedSections.includes(sec) : true;
+        const label = document.createElement("label");
+        label.className = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-xs font-medium cursor-pointer";
+        label.innerHTML = `<input type="checkbox" value="${sec}" ${isChecked ? "checked" : ""} class="section-checkbox rounded text-blue-700" /><span>${sec}</span>`;
+        container.appendChild(label);
+      });
+    }
+
+    function updateDiscountPreview() {
+      const price = parseFloat(document.getElementById("prodPrice").value) || 0;
+      const disc = Math.min(99, Math.max(0, parseFloat(document.getElementById("prodDiscount").value) || 0));
+      const finalPrice = price * (1 - disc / 100);
+      document.getElementById("discountPreviewText").innerHTML = disc > 0
+        ? `Descuento aplicado: <strong>${disc}% OFF</strong> · Precio final: <strong>$${finalPrice.toFixed(2)}</strong> (antes $${price.toFixed(2)})`
+        : `Precio final calculado: <strong>$${finalPrice.toFixed(2)}</strong>`;
+    }
+
+    document.getElementById("tabLogin").addEventListener("click", () => switchAuthTab("login"));
+    document.getElementById("tabRegister").addEventListener("click", () => switchAuthTab("register"));
+    document.getElementById("btnOpenAuth").addEventListener("click", () => {
+      showView("authView");
+      switchAuthTab("login");
+    });
+    document.getElementById("regStoreType").addEventListener("change", (e) => {
+      syncSectionsByStoreType(e.target.value, "regSectionsBox");
+    });
+    document.getElementById("editStoreType").addEventListener("change", (e) => {
+      syncSectionsByStoreType(e.target.value, "editSectionsBox");
+    });
+    document.getElementById("addCustomSectionBtn").addEventListener("click", () => {
+      const input = document.getElementById("newCustomSectionInput");
+      const val = input.value.trim();
+      if (!val) return;
+      const box = document.getElementById("editSectionsBox");
+      const label = document.createElement("label");
+      label.className = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-xs font-medium cursor-pointer";
+      label.innerHTML = `<input type="checkbox" value="${val}" checked class="section-checkbox rounded text-blue-700" /><span>${val}</span>`;
+      box.appendChild(label);
+      input.value = "";
+    });
+    document.querySelectorAll(".theme-preset-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const presets = {
+          "azul-blanco": { bg: "#f8fafc", primary: "#1d4ed8", title: "#0f172a", desc: "#475569" },
+          "amarillo-negro": { bg: "#fefce8", primary: "#ca8a04", title: "#09090b", desc: "#27272a" },
+          "rojo-negro": { bg: "#111827", primary: "#dc2626", title: "#ffffff", desc: "#d1d5db" },
+          "rojo-azul": { bg: "#eff6ff", primary: "#dc2626", title: "#1e3a8a", desc: "#334155" },
+          "verde-esmeralda": { bg: "#ecfdf5", primary: "#059669", title: "#064e3b", desc: "#374151" }
+        };
+        const p = presets[btn.dataset.preset];
+        if (!p) return;
+        document.getElementById("colorBg").value = p.bg;
+        document.getElementById("colorPrimary").value = p.primary;
+        document.getElementById("colorTitle").value = p.title;
+        document.getElementById("colorDesc").value = p.desc;
+      });
+    });
+    document.getElementById("prodPrice").addEventListener("input", updateDiscountPreview);
+    document.getElementById("prodDiscount").addEventListener("input", updateDiscountPreview);
+    document.getElementById("closeModalBtn").addEventListener("click", () => {
+      document.getElementById("productModal").classList.add("hidden");
+    });
+
+    syncSectionsByStoreType(document.getElementById("regStoreType").value, "regSectionsBox");
+    showView("authView");
+    switchAuthTab("login");
+  </script>
+
+  <!-- MÓDULO FIREBASE (AUTH + FIRESTORE + ANALYTICS) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+    import {
+      getAuth,
+      createUserWithEmailAndPassword,
+      signInWithEmailAndPassword,
+      signOut,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      setDoc,
+      getDoc,
+      updateDoc,
+      collection,
+      addDoc,
+      getDocs,
+      deleteDoc,
+      query,
+      where
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB8E7mss81AGLSq_s1qDshwlfbozmZTMQc",
+      authDomain: "tastes-catalogo.firebaseapp.com",
+      projectId: "tastes-catalogo",
+      storageBucket: "tastes-catalogo.firebasestorage.app",
+      messagingSenderId: "971226394495",
+      appId: "1:971226394495:web:9c2fdbe7bac94a7793b44a",
+      measurementId: "G-T2QLLZF47D"
+    };
+
+    const ADMIN_EXEMPT_EMAIL = "tastess07@gmail.com";
+
+    let auth = null;
+    let db = null;
+    let firebaseReady = false;
+    let currentUser = null;
+    let currentStoreData = null;
+    let currentStoreProducts = [];
+    let activePublicStoreData = null;
+    let activePublicProducts = [];
+    let selectedPublicSection = "Todos";
+    let pendingRegUser = null;
+    let uploadedBase64Image = "";
+
+    function slugify(text) {
+      return (text || "tienda")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "") || "tienda";
+    }
+
+    function applyStoreThemeToPage(theme = {}) {
+      document.documentElement.style.setProperty("--cat-bg", theme.bg || "#f8fafc");
+      document.documentElement.style.setProperty("--cat-primary", theme.primary || "#1d4ed8");
+      document.documentElement.style.setProperty("--cat-title-color", theme.titleColor || "#0f172a");
+      document.documentElement.style.setProperty("--cat-desc-color", theme.descColor || "#475569");
+      document.documentElement.style.setProperty("--cat-title-size", theme.titleSize || "2.15rem");
+      document.documentElement.style.setProperty("--cat-desc-size", theme.descSize || "1rem");
+    }
+
+    function populateProductCategorySelect(sections) {
+      const select = document.getElementById("prodCategory");
+      const cats = sections.filter((s) => s !== "Todos");
+      const list = cats.length ? cats : ["General"];
+      select.innerHTML = list.map((c) => `<option value="${c}">${c}</option>`).join("");
+    }
+
+    function buildWhatsAppUrl(phone, product) {
+      const cleanPhone = (phone || "").replace(/\D/g, "");
+      const extraDetails = [
+        product.color ? `Color: ${product.color}` : "",
+        product.size ? `Talla: ${product.size}` : ""
+      ].filter(Boolean).join(", ");
+      const text = `Hola, me interesa este producto: ${product.name}${extraDetails ? ` (${extraDetails})` : ""}, el precio es $${Number(product.finalPrice).toFixed(2)}. Quisiera pedirlo.`;
+      return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
+    }
+
+    async function loadAdminProducts() {
+      if (!firebaseReady || !currentUser) return;
+      const q = query(collection(db, "products"), where("storeUid", "==", currentUser.uid));
+      const snap = await getDocs(q);
+      currentStoreProducts = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      document.getElementById("adminProductCount").textContent = currentStoreProducts.length;
+
+      const listEl = document.getElementById("adminProductsList");
+      if (!currentStoreProducts.length) {
+        listEl.innerHTML = `<p class="text-sm text-slate-500 col-span-full">Tu catálogo está vacío. Añade tu primer producto arriba.</p>`;
+        return;
+      }
+
+      listEl.innerHTML = currentStoreProducts.map((p) => `
+        <div class="border border-slate-200 rounded-xl p-4 flex flex-col justify-between gap-3">
+          <div class="flex gap-3">
+            <img src="${p.imageUrl}" alt="${p.name}" class="w-16 h-16 rounded-lg object-cover bg-slate-100 shrink-0" />
+            <div class="min-w-0">
+              <p class="font-bold text-sm text-slate-900 truncate">${p.name}</p>
+              <p class="text-xs text-slate-500">${p.category} ${p.size ? `· Talla: ${p.size}` : ""} ${p.color ? `· ${p.color}` : ""}</p>
+              <p class="text-sm font-semibold text-blue-700 mt-1">
+                $${Number(p.finalPrice).toFixed(2)}
+                ${p.discountPercent > 0 ? `<span class="text-xs text-rose-600 ml-1">(${p.discountPercent}% OFF)</span>` : ""}
+              </p>
+              <p class="text-xs ${p.stock > 0 ? "text-emerald-700" : "text-rose-600 font-semibold"}">
+                ${p.stock > 0 ? `Stock: ${p.stock}` : "Agotado (No disponible)"}
+              </p>
+            </div>
+          </div>
+          <div class="flex gap-2 pt-2 border-t border-slate-100">
+            <button type="button" data-edit-id="${p.id}" class="edit-prod-btn flex-1 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-800">Editar</button>
+            <button type="button" data-del-id="${p.id}" class="del-prod-btn flex-1 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-xs font-semibold text-rose-700">Eliminar</button>
+          </div>
+        </div>
+      `).join("");
+
+      listEl.querySelectorAll(".edit-prod-btn").forEach((b) => {
+        b.addEventListener("click", () => {
+          const prod = currentStoreProducts.find((item) => item.id === b.dataset.editId);
+          if (!prod) return;
+          document.getElementById("editingProductId").value = prod.id;
+          document.getElementById("productFormTitle").textContent = "Editar Producto";
+          document.getElementById("cancelEditProdBtn").classList.remove("hidden");
+          document.getElementById("prodName").value = prod.name || "";
+          document.getElementById("prodPrice").value = prod.price || 0;
+          document.getElementById("prodDiscount").value = prod.discountPercent || 0;
+          document.getElementById("prodStock").value = prod.stock ?? 0;
+          document.getElementById("prodSize").value = prod.size || "";
+          document.getElementById("prodColor").value = prod.color || "";
+          document.getElementById("prodType").value = prod.type || "";
+          document.getElementById("prodCategory").value = prod.category || "";
+          document.getElementById("prodImageUrl").value = prod.imageUrl || "";
+          document.getElementById("prodDesc").value = prod.description || "";
+          updateDiscountPreview();
+          document.getElementById("productForm").scrollIntoView({ behavior: "smooth" });
+        });
+      });
+
+      listEl.querySelectorAll(".del-prod-btn").forEach((b) => {
+        b.addEventListener("click", async () => {
+          await deleteDoc(doc(db, "products", b.dataset.delId));
+          showToast("Producto eliminado.");
+          await loadAdminProducts();
+        });
+      });
+    }
+
+    async function openAdminPanel() {
+      if (!firebaseReady || !currentUser) return;
+      try {
+        if (!currentStoreData) {
+          const snap = await getDoc(doc(db, "stores", currentUser.uid));
+          currentStoreData = snap.exists() ? snap.data() : null;
+        }
+        const isExempt = (currentUser.email || "").toLowerCase() === ADMIN_EXEMPT_EMAIL;
+        if (!isExempt && !currentStoreData?.subscriptionActive) {
+          showView("authView");
+          document.getElementById("paypalGateBox").classList.remove("hidden");
+          return;
+        }
+
+        showView("adminView");
+        document.getElementById("adminStoreTitle").textContent = currentStoreData.storeName;
+        document.getElementById("adminStoreEmail").textContent = `Cuenta: ${currentStoreData.email} · Tipo: ${currentStoreData.storeType}`;
+
+        const uniqueUrl = `${window.location.origin}${window.location.pathname}?store=${encodeURIComponent(currentStoreData.storeSlug)}`;
+        const linkEl = document.getElementById("adminUniqueLinkText");
+        linkEl.href = uniqueUrl;
+        linkEl.textContent = uniqueUrl;
+
+        document.getElementById("editStoreName").value = currentStoreData.storeName || "";
+        document.getElementById("editWhatsapp").value = currentStoreData.whatsapp || "";
+        document.getElementById("editStoreType").value = currentStoreData.storeType || "Otros";
+        document.getElementById("editDescription").value = currentStoreData.description || "";
+
+        const t = currentStoreData.theme || {};
+        document.getElementById("colorBg").value = t.bg || "#f8fafc";
+        document.getElementById("colorPrimary").value = t.primary || "#1d4ed8";
+        document.getElementById("colorTitle").value = t.titleColor || "#0f172a";
+        document.getElementById("colorDesc").value = t.descColor || "#475569";
+        document.getElementById("sizeTitle").value = t.titleSize || "2.15rem";
+        document.getElementById("sizeDesc").value = t.descSize || "1rem";
+
+        syncSectionsByStoreType(currentStoreData.storeType, "editSectionsBox", currentStoreData.sections || ["Todos"]);
+        populateProductCategorySelect(currentStoreData.sections || ["Todos"]);
+        await loadAdminProducts();
+      } catch (err) {
+        showToast("Error al abrir el panel: " + (err?.message || "Revisa Firestore."));
+      }
+    }
+
+    function renderPublicCatalog() {
+      const search = (document.getElementById("publicSearchInput").value || "").trim().toLowerCase();
+      const primaryColor = activePublicStoreData?.theme?.primary || "#1d4ed8";
+
+      const filtered = activePublicProducts.filter((p) => {
+        const matchSec = selectedPublicSection === "Todos" || p.category === selectedPublicSection;
+        const haystack = `${p.name || ""} ${p.description || ""} ${p.color || ""} ${p.size || ""} ${p.type || ""} ${p.category || ""}`.toLowerCase();
+        const matchSearch = !search || haystack.includes(search);
+        return matchSec && matchSearch;
+      });
+
+      document.getElementById("visibleProductsCount").textContent = filtered.length;
+      const grid = document.getElementById("publicProductsGrid");
+
+      if (!filtered.length) {
+        grid.innerHTML = `<div class="col-span-full bg-white rounded-2xl border border-slate-200 p-10 text-center text-slate-500">No hay productos que coincidan en esta sección.</div>`;
+        return;
+      }
+
+      grid.innerHTML = filtered.map((p) => {
+        const isOutOfStock = (p.stock ?? 0) <= 0;
+        const waUrl = buildWhatsAppUrl(activePublicStoreData.whatsapp, p);
+
+        return `
+          <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between">
+            <div data-modal-id="${p.id}" class="open-modal-trigger cursor-pointer">
+              <div class="relative bg-slate-100 h-52 overflow-hidden">
+                <img src="${p.imageUrl}" alt="${p.name}" class="w-full h-full object-cover hover:scale-105 transition duration-300" />
+                ${p.discountPercent > 0 ? `<span class="absolute top-3 left-3 bg-rose-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">${p.discountPercent}% OFF</span>` : ""}
+              </div>
+              <div class="p-4 space-y-1.5">
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">${p.category}</p>
+                <h3 class="font-bold text-slate-900 text-base line-clamp-1">${p.name}</h3>
+                <p class="text-xs text-slate-500 line-clamp-2">${p.description}</p>
+                <div class="pt-1 flex items-center gap-2">
+                  <span class="font-bold text-lg text-slate-900">$${Number(p.finalPrice).toFixed(2)}</span>
+                  ${p.discountPercent > 0 ? `<span class="text-xs line-through text-slate-400">$${Number(p.price).toFixed(2)}</span>` : ""}
+                </div>
+                <p class="text-xs ${isOutOfStock ? "text-rose-600 font-semibold" : "text-emerald-700"}">
+                  ${isOutOfStock ? "Agotado (No disponible)" : `Stock disponible: ${p.stock}`}
+                </p>
+              </div>
+            </div>
+            <div class="px-4 pb-4 pt-2 flex gap-2">
+              <button type="button" data-modal-id="${p.id}" class="open-modal-trigger px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                Ver detalle
+              </button>
+              ${isOutOfStock
+                ? `<button type="button" disabled class="flex-1 py-2 px-3 rounded-xl bg-slate-200 text-slate-500 text-xs font-semibold cursor-not-allowed">Agotado</button>`
+                : `<a href="${waUrl}" target="_blank" rel="noopener noreferrer" style="background-color:${primaryColor}" class="flex-1 py-2 px-3 rounded-xl text-white text-xs font-semibold text-center hover:opacity-95 transition">Pedir por WhatsApp</a>`
+              }
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      grid.querySelectorAll(".open-modal-trigger").forEach((el) => {
+        el.addEventListener("click", () => {
+          const p = activePublicProducts.find((item) => item.id === el.dataset.modalId);
+          if (!p) return;
+          const isOutOfStock = (p.stock ?? 0) <= 0;
+          const modalPrimary = activePublicStoreData?.theme?.primary || "#16a34a";
+
+          document.getElementById("modalCategoryTag").textContent = p.category || "Producto";
+          document.getElementById("modalImg").src = p.imageUrl;
+          document.getElementById("modalImg").alt = p.name;
+          document.getElementById("modalName").textContent = p.name;
+          document.getElementById("modalDesc").textContent = p.description;
+
+          document.getElementById("modalPriceBox").innerHTML = `
+            <span class="text-xl font-extrabold text-slate-900">$${Number(p.finalPrice).toFixed(2)}</span>
+            ${p.discountPercent > 0 ? `<span class="text-sm line-through text-slate-400">$${Number(p.price).toFixed(2)}</span><span class="text-xs font-bold bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full">${p.discountPercent}% OFF</span>` : ""}
+          `;
+
+          document.getElementById("modalStock").textContent = isOutOfStock ? "Agotado (No disponible)" : `${p.stock} unidades disponibles`;
+          document.getElementById("modalSizeRow").classList.toggle("hidden", !p.size);
+          document.getElementById("modalSize").textContent = p.size || "";
+          document.getElementById("modalColor").textContent = p.color || "No especificado";
+          document.getElementById("modalType").textContent = p.type || "General";
+
+          document.getElementById("modalActionBox").innerHTML = isOutOfStock
+            ? `<button type="button" disabled class="w-full py-3 rounded-xl bg-slate-200 text-slate-500 font-semibold text-sm cursor-not-allowed">No disponible (Agotado)</button>`
+            : `<a href="${buildWhatsAppUrl(activePublicStoreData.whatsapp, p)}" target="_blank" rel="noopener noreferrer" style="background-color:${modalPrimary}" class="block w-full py-3 rounded-xl text-white font-semibold text-sm text-center hover:opacity-95">Pedir por WhatsApp</a>`;
+
+          document.getElementById("productModal").classList.remove("hidden");
+        });
+      });
+    }
+
+    function renderPublicSectionsBar() {
+      const sections = activePublicStoreData?.sections?.length ? activePublicStoreData.sections : ["Todos"];
+      const bar = document.getElementById("publicSectionsBar");
+      const primaryColor = activePublicStoreData?.theme?.primary || "#1d4ed8";
+
+      bar.innerHTML = sections.map((sec) => {
+        const active = selectedPublicSection === sec;
+        return `<button type="button" data-sec="${sec}" style="${active ? `background-color:${primaryColor};color:#fff;border-color:${primaryColor};` : ""}" class="pub-sec-btn shrink-0 px-4 py-2 rounded-full text-xs font-semibold border transition ${active ? "" : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"}">${sec}</button>`;
+      }).join("");
+
+      bar.querySelectorAll(".pub-sec-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          selectedPublicSection = btn.dataset.sec;
+          renderPublicSectionsBar();
+          renderPublicCatalog();
+        });
+      });
+    }
+
+    async function viewPublicStore(slug) {
+      if (!firebaseReady || !slug) return;
+      try {
+        const q = query(collection(db, "stores"), where("storeSlug", "==", slug));
+        const snap = await getDocs(q);
+        if (snap.empty) {
+          showToast("Tienda no encontrada.");
+          showView("authView");
+          return;
+        }
+        const storeDoc = snap.docs[0];
+        activePublicStoreData = { uid: storeDoc.id, ...storeDoc.data() };
+        applyStoreThemeToPage(activePublicStoreData.theme || {});
+
+        document.getElementById("storeTypeBadge").textContent = `${activePublicStoreData.storeType} · CATÁLOGO OFICIAL`;
+        document.getElementById("publicStoreName").textContent = activePublicStoreData.storeName;
+        document.getElementById("publicStoreDesc").textContent = activePublicStoreData.description;
+
+        const prodQuery = query(collection(db, "products"), where("storeUid", "==", activePublicStoreData.uid));
+        const prodSnap = await getDocs(prodQuery);
+        activePublicProducts = prodSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+        selectedPublicSection = "Todos";
+        renderPublicSectionsBar();
+        renderPublicCatalog();
+        showView("storefrontView");
+      } catch (err) {
+        showToast("Error al cargar catálogo: " + (err?.message || "Revisa Firestore."));
+      }
+    }
+
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!firebaseReady) {
+        showToast("Firebase aún no está disponible. Revisa la configuración del proyecto.");
+        return;
+      }
+      const btn = document.getElementById("loginSubmitBtn");
+      btn.disabled = true;
+      try {
+        await signInWithEmailAndPassword(auth, document.getElementById("loginEmail").value.trim().toLowerCase(), document.getElementById("loginPassword").value);
+      } catch (err) {
+        showToast("Error al iniciar sesión: " + (err?.message || "Verifica tus datos."));
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById("registerForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!firebaseReady) {
+        showToast("Firebase aún no está disponible. Revisa la configuración del proyecto.");
+        return;
+      }
+      const btn = document.getElementById("registerSubmitBtn");
+      btn.disabled = true;
+      try {
+        const email = document.getElementById("regEmail").value.trim().toLowerCase();
+        const password = document.getElementById("regPassword").value;
+        const storeName = document.getElementById("regStoreName").value.trim();
+        const whatsapp = document.getElementById("regWhatsapp").value.trim().replace(/\D/g, "");
+        const storeType = document.getElementById("regStoreType").value;
+        const description = document.getElementById("regDescription").value.trim();
+        const sections = Array.from(document.querySelectorAll("#regSectionsBox .section-checkbox:checked")).map((el) => el.value);
+        const storeSlug = slugify(storeName);
+        const isAdminExempt = email === ADMIN_EXEMPT_EMAIL;
+
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        const storeDoc = {
+          uid: cred.user.uid,
+          email,
+          storeName,
+          storeSlug,
+          storeType,
+          description,
+          whatsapp,
+          subscriptionActive: isAdminExempt ? true : false,
+          paypalPlanId: "P-65D64792V6625121KNL7VKOQ",
+          sections: sections.length ? sections : ["Todos"],
+          theme: {
+            bg: "#f8fafc",
+            primary: "#1d4ed8",
+            titleColor: "#0f172a",
+            descColor: "#475569",
+            titleSize: "2.15rem",
+            descSize: "1rem"
+          },
+          createdAt: Date.now()
+        };
+
+        await setDoc(doc(db, "stores", cred.user.uid), storeDoc);
+        currentStoreData = storeDoc;
+
+        if (!isAdminExempt) {
+          pendingRegUser = cred.user;
+          document.getElementById("paypalGateBox").classList.remove("hidden");
+          showToast("Cuenta creada. Activa tu suscripción de $20/mes por PayPal para entrar.");
+        } else {
+          showToast("¡Bienvenido! Acceso de administrador activado.");
+          await openAdminPanel();
+        }
+      } catch (err) {
+        showToast("Error al crear cuenta: " + (err?.message || "Intenta de nuevo."));
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById("confirmSubBtn").addEventListener("click", async () => {
+      const targetUid = currentUser?.uid || pendingRegUser?.uid;
+      if (!firebaseReady || !targetUid) {
+        showToast("Inicia sesión primero para verificar tu cuenta.");
+        return;
+      }
+      await updateDoc(doc(db, "stores", targetUid), { subscriptionActive: true });
+      if (currentStoreData) currentStoreData.subscriptionActive = true;
+      document.getElementById("paypalGateBox").classList.add("hidden");
+      showToast("Suscripción activada. Abriendo tu panel...");
+      await openAdminPanel();
+    });
+
+    document.getElementById("btnLogout").addEventListener("click", async () => {
+      try { if (auth) await signOut(auth); } catch (_) {}
+      currentUser = null;
+      currentStoreData = null;
+      showView("authView");
+      showToast("Sesión cerrada.");
+    });
+
+    document.getElementById("btnOpenAdmin").addEventListener("click", openAdminPanel);
+    document.getElementById("viewPublicFromAdminBtn").addEventListener("click", () => {
+      if (currentStoreData?.storeSlug) viewPublicStore(currentStoreData.storeSlug);
+    });
+    document.getElementById("copyUniqueLinkBtn").addEventListener("click", () => {
+      navigator.clipboard?.writeText(document.getElementById("adminUniqueLinkText").href);
+      showToast("Enlace único copiado.");
+    });
+    document.getElementById("brandHomeBtn").addEventListener("click", () => {
+      const s = new URLSearchParams(window.location.search).get("store");
+      if (s) viewPublicStore(s);
+      else if (currentUser && currentStoreData) openAdminPanel();
+      else showView("authView");
+    });
+
+    document.getElementById("storeSettingsForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!firebaseReady || !currentUser) return;
+      const storeName = document.getElementById("editStoreName").value.trim();
+      const whatsapp = document.getElementById("editWhatsapp").value.trim().replace(/\D/g, "");
+      const storeType = document.getElementById("editStoreType").value;
+      const description = document.getElementById("editDescription").value.trim();
+      const sections = Array.from(document.querySelectorAll("#editSectionsBox .section-checkbox:checked")).map((el) => el.value);
+      const finalSections = sections.length ? sections : ["Todos"];
+      const theme = {
+        bg: document.getElementById("colorBg").value,
+        primary: document.getElementById("colorPrimary").value,
+        titleColor: document.getElementById("colorTitle").value,
+        descColor: document.getElementById("colorDesc").value,
+        titleSize: document.getElementById("sizeTitle").value,
+        descSize: document.getElementById("sizeDesc").value
+      };
+      const updated = { storeName, storeSlug: slugify(storeName), whatsapp, storeType, description, sections: finalSections, theme };
+      await updateDoc(doc(db, "stores", currentUser.uid), updated);
+      currentStoreData = { ...currentStoreData, ...updated };
+      applyStoreThemeToPage(theme);
+      populateProductCategorySelect(finalSections);
+      const uniqueUrl = `${window.location.origin}${window.location.pathname}?store=${encodeURIComponent(currentStoreData.storeSlug)}`;
+      document.getElementById("adminStoreTitle").textContent = storeName;
+      document.getElementById("adminUniqueLinkText").href = uniqueUrl;
+      document.getElementById("adminUniqueLinkText").textContent = uniqueUrl;
+      showToast("Configuración guardada y actualizada.");
+    });
+
+    document.getElementById("prodImageFile").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        uploadedBase64Image = reader.result;
+        document.getElementById("prodImageUrl").value = uploadedBase64Image;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById("cancelEditProdBtn").addEventListener("click", () => {
+      document.getElementById("productForm").reset();
+      document.getElementById("editingProductId").value = "";
+      document.getElementById("productFormTitle").textContent = "2. Añadir Producto al Catálogo";
+      document.getElementById("cancelEditProdBtn").classList.add("hidden");
+      uploadedBase64Image = "";
+      updateDiscountPreview();
+    });
+
+    document.getElementById("productForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!firebaseReady || !currentUser) return;
+      const editingId = document.getElementById("editingProductId").value;
+      const price = parseFloat(document.getElementById("prodPrice").value) || 0;
+      const discountPercent = Math.min(99, Math.max(0, parseFloat(document.getElementById("prodDiscount").value) || 0));
+      const finalPrice = Number((price * (1 - discountPercent / 100)).toFixed(2));
+      const stock = Math.max(0, parseInt(document.getElementById("prodStock").value, 10) || 0);
+
+      const productData = {
+        storeUid: currentUser.uid,
+        name: document.getElementById("prodName").value.trim(),
+        price,
+        discountPercent,
+        finalPrice,
+        stock,
+        size: document.getElementById("prodSize").value.trim(),
+        color: document.getElementById("prodColor").value.trim(),
+        type: document.getElementById("prodType").value.trim(),
+        category: document.getElementById("prodCategory").value,
+        imageUrl: document.getElementById("prodImageUrl").value.trim() || "https://via.placeholder.com/400x300?text=Producto",
+        description: document.getElementById("prodDesc").value.trim(),
+        updatedAt: Date.now()
+      };
+
+      if (editingId) {
+        await updateDoc(doc(db, "products", editingId), productData);
+        showToast("Producto actualizado.");
+      } else {
+        await addDoc(collection(db, "products"), { ...productData, createdAt: Date.now() });
+        showToast("Producto añadido.");
+      }
+
+      document.getElementById("productForm").reset();
+      document.getElementById("editingProductId").value = "";
+      document.getElementById("productFormTitle").textContent = "2. Añadir Producto al Catálogo";
+      document.getElementById("cancelEditProdBtn").classList.add("hidden");
+      uploadedBase64Image = "";
+      updateDiscountPreview();
+      await loadAdminProducts();
+    });
+
+    document.getElementById("suggestionForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!firebaseReady) return;
+      const msg = document.getElementById("suggestionText").value.trim();
+      if (!msg) return;
+      await addDoc(collection(db, "suggestions"), {
+        toAdminEmail: ADMIN_EXEMPT_EMAIL,
+        fromEmail: currentUser?.email || "visitante",
+        storeName: currentStoreData?.storeName || "N/A",
+        message: msg,
+        createdAt: Date.now()
+      });
+      document.getElementById("suggestionText").value = "";
+      showToast("Mensaje enviado a " + ADMIN_EXEMPT_EMAIL + ".");
+    });
+
+    document.getElementById("publicSearchInput").addEventListener("input", renderPublicCatalog);
+
+    try {
+      const app = initializeApp(firebaseConfig);
+      try { getAnalytics(app); } catch (_) {}
+      auth = getAuth(app);
+      db = getFirestore(app);
+      firebaseReady = true;
+
+      const initialSlug = new URLSearchParams(window.location.search).get("store");
+      if (initialSlug) {
+        viewPublicStore(initialSlug);
+      }
+
+      onAuthStateChanged(auth, async (user) => {
+        currentUser = user;
+        const badge = document.getElementById("userSessionBadge");
+        const btnAdmin = document.getElementById("btnOpenAdmin");
+        const btnLogout = document.getElementById("btnLogout");
+        const btnAuth = document.getElementById("btnOpenAuth");
+
+        if (!user) {
+          badge.classList.add("hidden");
+          btnAdmin.classList.add("hidden");
+          btnLogout.classList.add("hidden");
+          btnAuth.classList.remove("hidden");
+          if (!new URLSearchParams(window.location.search).get("store")) {
+            showView("authView");
+          }
+          return;
+        }
+
+        try {
+          const snap = await getDoc(doc(db, "stores", user.uid));
+          currentStoreData = snap.exists() ? snap.data() : null;
+        } catch (_) {
+          currentStoreData = null;
+        }
+
+        const isExempt = (user.email || "").toLowerCase() === ADMIN_EXEMPT_EMAIL;
+        const hasActiveSub = isExempt || Boolean(currentStoreData?.subscriptionActive);
+
+        badge.textContent = user.email;
+        badge.classList.remove("hidden");
+        btnLogout.classList.remove("hidden");
+        btnAuth.classList.add("hidden");
+
+        if (!hasActiveSub) {
+          showView("authView");
+          document.getElementById("paypalGateBox").classList.remove("hidden");
+          showToast("Activa tu suscripción de $20/mes vía PayPal para entrar al panel.");
+          return;
+        }
+
+        btnAdmin.classList.remove("hidden");
+        if (!new URLSearchParams(window.location.search).get("store") && currentStoreData) {
+          await openAdminPanel();
+        }
+      });
+    } catch (err) {
+      firebaseReady = false;
+      showToast("Aviso de Firebase: " + (err?.message || "Revisa la configuración."));
+    }
+  </script>
+</body>
+</html>
