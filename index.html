@@ -30,7 +30,7 @@
 </head>
 <body class="text-slate-800 antialiased">
 
-  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
+  <header id="mainHeader" class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
     <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
       <button type="button" id="brandHomeBtn" class="flex items-center gap-2 text-left">
         <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-blue-700 text-white font-bold">TC</span>
@@ -40,7 +40,7 @@
         </div>
       </button>
 
-      <div class="flex items-center gap-2 flex-wrap">
+      <div id="headerAuthControls" class="flex items-center gap-2 flex-wrap">
         <span id="userSessionBadge" class="hidden text-xs bg-slate-100 text-slate-700 px-3 py-1.5 rounded-full"></span>
         <button id="btnOpenAuth" type="button" class="px-3.5 py-2 text-sm font-medium rounded-lg bg-blue-700 text-white hover:bg-blue-800 transition">
           Iniciar sesión / Crear tienda
@@ -55,11 +55,11 @@
     </div>
   </header>
 
-  <div class="bg-amber-50 border-b border-amber-200 text-amber-950 text-xs sm:text-sm py-2 px-4 text-center">
-    <strong>Nota:</strong> Esta app solo acepta pagos por medio de <strong>PayPal</strong>. Para activar tu suscripción y publicar tu catálogo, debes pagar tu plan mensual de <strong>$20 USD</strong> vía PayPal.
+  <div id="platformNoticeBanner" class="bg-amber-50 border-b border-amber-200 text-amber-950 text-xs sm:text-sm py-2 px-4 text-center">
+    <strong>Nota:</strong> Esta app solo acepta pagos por medio de <strong>PayPal</strong>. La suscripción mensual de la plataforma es de <strong>$20 USD/mes</strong> vía PayPal, y cada tienda muestra su catálogo en el tipo de moneda elegido.
   </div>
 
-  <div id="toastBox" class="fixed bottom-5 right-5 z-50 hidden max-w-sm bg-slate-900 text-white text-sm px-4 py-3 rounded-xl shadow-lg"></div>
+  <div id="toastBox" class="fixed bottom-5 right-5 z-50 hidden max-w-md bg-slate-900 text-white text-sm px-4 py-3 rounded-xl shadow-lg"></div>
 
   <!-- VISTA 1: ACCESO / REGISTRO / SUSCRIPCIÓN PAYPAL -->
   <section id="authView" class="max-w-4xl mx-auto px-4 py-10">
@@ -69,7 +69,7 @@
           Iniciar sesión
         </button>
         <button id="tabRegister" type="button" class="px-4 py-2 rounded-lg text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200">
-          Crear cuenta de tienda ($20/mes)
+          Crear cuenta de tienda ($20 USD/mes)
         </button>
       </div>
 
@@ -107,7 +107,7 @@
             <label class="block text-sm font-medium text-slate-700 mb-1">WhatsApp (con código de país) *</label>
             <input id="regWhatsapp" type="text" required class="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm" placeholder="Ej: 18095551234" />
           </div>
-          <div class="sm:col-span-2">
+          <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">Tipo de tienda *</label>
             <select id="regStoreType" class="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm bg-white">
               <option value="Ropa y Moda">Ropa y Moda</option>
@@ -131,6 +131,10 @@
               <option value="Otros">Otros</option>
             </select>
           </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Tipo de moneda del catálogo *</label>
+            <select id="regCurrency" class="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm bg-white"></select>
+          </div>
           <div class="sm:col-span-2">
             <label class="block text-sm font-medium text-slate-700 mb-1">Descripción de la tienda *</label>
             <textarea id="regDescription" rows="2" required class="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm" placeholder="Ej: Tu mejor tienda con envíos rápidos y atención directa"></textarea>
@@ -143,24 +147,21 @@
         </div>
 
         <button id="registerSubmitBtn" type="submit" class="w-full py-3 px-4 rounded-lg bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700 transition">
-          Crear cuenta y continuar a suscripción PayPal ($20/mes)
+          Crear cuenta y continuar a suscripción PayPal ($20 USD/mes)
         </button>
       </form>
 
       <div id="paypalGateBox" class="hidden mt-8 border-t border-slate-200 pt-6">
         <div class="bg-blue-50 border border-blue-200 rounded-2xl p-6">
-          <h3 class="text-lg font-bold text-blue-950 mb-2">Activa tu suscripción mensual ($20 USD/mes) por PayPal</h3>
-          <p class="text-sm text-blue-900 mb-4">
-            Esta app solo acepta pagos por medio de PayPal. Para activar tu suscripción de <strong>$20 mensuales</strong> y desbloquear tu enlace único y panel de administración, realiza la suscripción en el enlace oficial de PayPal y luego confirma tu activación.
+          <h3 class="text-lg font-bold text-blue-950 mb-2">Suscripción requerida para acceder al panel ($20 USD/mes)</h3>
+          <p id="gateCurrencyInfo" class="text-sm text-blue-900 mb-4">
+            Esta app solo acepta pagos por medio de <strong>PayPal</strong>. Completa la suscripción de <strong>$20 USD/mes</strong> en PayPal para activar tu tienda. Mientras tu suscripción no esté activa, el acceso al panel permanece bloqueado.
           </p>
           <div class="flex flex-wrap gap-3 items-center">
             <a href="https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-65D64792V6625121KNL7VKOQ" target="_blank" rel="noopener noreferrer"
                class="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-[#0070ba] hover:bg-[#005ea6] text-white font-semibold text-sm transition">
-              Suscribirse en PayPal ($20/mes)
+              Suscribirse en PayPal ($20 USD/mes)
             </a>
-            <button id="confirmSubBtn" type="button" class="px-5 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm transition">
-              Ya completé mi suscripción en PayPal
-            </button>
           </div>
         </div>
       </div>
@@ -193,9 +194,9 @@
     </div>
 
     <form id="storeSettingsForm" class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
-      <h3 class="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">1. Datos de la Tienda, Colores, Letras y Secciones</h3>
+      <h3 class="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">1. Datos de la Tienda, Tipo de Moneda, Colores, Letras y Secciones</h3>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div>
           <label class="block text-sm font-medium text-slate-700 mb-1">Nombre de la tienda</label>
           <input id="editStoreName" type="text" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
@@ -228,7 +229,11 @@
             <option value="Otros">Otros</option>
           </select>
         </div>
-        <div class="sm:col-span-2 lg:col-span-3">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Tipo de moneda del catálogo</label>
+          <select id="editCurrency" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white"></select>
+        </div>
+        <div class="sm:col-span-2 lg:col-span-4">
           <label class="block text-sm font-medium text-slate-700 mb-1">Descripción de la tienda</label>
           <input id="editDescription" type="text" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
         </div>
@@ -316,7 +321,7 @@
           <input id="prodName" type="text" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Ej: Nintendo Switch" />
         </div>
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">Precio base ($) *</label>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Precio base *</label>
           <input id="prodPrice" type="number" step="0.01" min="0" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="100" />
         </div>
         <div>
@@ -357,7 +362,7 @@
       </div>
 
       <div id="discountPreviewText" class="text-xs text-slate-600 bg-slate-50 px-3 py-2 rounded-lg">
-        Precio final calculado: <strong>$0.00</strong>
+        Precio final calculado: <strong>0.00</strong>
       </div>
 
       <button type="submit" class="px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700 transition">
@@ -384,14 +389,14 @@
     </div>
   </section>
 
-  <!-- VISTA 3: CATÁLOGO PÚBLICO -->
+  <!-- VISTA 3: CATÁLOGO PÚBLICO (ACCESO LIBRE SIN CUENTA NI SUSCRIPCIÓN) -->
   <section id="storefrontView" class="hidden max-w-7xl mx-auto px-4 py-8 space-y-8">
     <div id="storeHeroBanner" class="rounded-2xl bg-white border border-slate-200 p-6 sm:p-10 shadow-sm">
       <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
         <span id="storeTypeBadge" class="inline-block text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-slate-100 text-slate-700">
           CATÁLOGO OFICIAL
         </span>
-        <span class="text-xs text-slate-500">Enlace único de tienda</span>
+        <span id="storeCurrencyBadge" class="text-xs font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full"></span>
       </div>
       <h1 id="publicStoreName" class="store-title-dynamic font-extrabold tracking-tight mb-2">Nombre de la Tienda</h1>
       <p id="publicStoreDesc" class="store-desc-dynamic max-w-3xl">Descripción de la tienda</p>
@@ -448,6 +453,35 @@
 
   <!-- SCRIPT PRINCIPAL DE INTERFAZ -->
   <script>
+    const WORLD_CURRENCIES = [
+      { code: "USD", symbol: "$", label: "Estados Unidos (USD $)" },
+      { code: "DOP", symbol: "RD$", label: "República Dominicana (DOP RD$)" },
+      { code: "COP", symbol: "COP$", label: "Colombia (COP$)" },
+      { code: "MXN", symbol: "MX$", label: "México (MX$)" },
+      { code: "EUR", symbol: "€", label: "Unión Europea / España (EUR €)" },
+      { code: "GBP", symbol: "£", label: "Reino Unido (GBP £)" },
+      { code: "CAD", symbol: "CA$", label: "Canadá (CAD CA$)" },
+      { code: "ARS", symbol: "AR$", label: "Argentina (ARS AR$)" },
+      { code: "CLP", symbol: "CL$", label: "Chile (CLP CL$)" },
+      { code: "PEN", symbol: "S/", label: "Perú (PEN S/)" },
+      { code: "BRL", symbol: "R$", label: "Brasil (BRL R$)" },
+      { code: "BOB", symbol: "Bs", label: "Bolivia (BOB Bs)" },
+      { code: "PYG", symbol: "₲", label: "Paraguay (PYG ₲)" },
+      { code: "UYU", symbol: "UY$", label: "Uruguay (UY$)" },
+      { code: "VES", symbol: "Bs.D", label: "Venezuela (VES Bs.D)" },
+      { code: "GTQ", symbol: "Q", label: "Guatemala (GTQ Q)" },
+      { code: "HNL", symbol: "L", label: "Honduras (HNL L)" },
+      { code: "NIO", symbol: "C$", label: "Nicaragua (NIO C$)" },
+      { code: "CRC", symbol: "₡", label: "Costa Rica (CRC ₡)" },
+      { code: "PAB", symbol: "B/.", label: "Panamá (PAB B/.)" },
+      { code: "JPY", symbol: "¥", label: "Japón (JPY ¥)" },
+      { code: "CNY", symbol: "¥", label: "China (CNY ¥)" },
+      { code: "KRW", symbol: "₩", label: "Corea del Sur (KRW ₩)" },
+      { code: "INR", symbol: "₹", label: "India (INR ₹)" },
+      { code: "AUD", symbol: "A$", label: "Australia (AUD A$)" },
+      { code: "CHF", symbol: "CHF", label: "Suiza (CHF)" }
+    ];
+
     const DEFAULT_SECTIONS_BY_TYPE = {
       "Ropa y Moda": ["Todos", "Polochés", "Camisas", "Blusas", "Pantalones", "Pantalón corto", "Sweaters", "Pantis"],
       "Calzado y Zapatos": ["Todos", "Tenis / Sneakers", "Sandalias", "Formales", "Botas", "Escolares"],
@@ -462,13 +496,34 @@
       "Otros": ["Todos", "Destacados", "Novedades", "Ofertas"]
     };
 
+    function populateCurrencySelects() {
+      const html = WORLD_CURRENCIES.map((c) => `<option value="${c.code}">${c.label}</option>`).join("");
+      const regSel = document.getElementById("regCurrency");
+      const editSel = document.getElementById("editCurrency");
+      if (regSel) regSel.innerHTML = html;
+      if (editSel) editSel.innerHTML = html;
+    }
+
+    function getCurrencyMeta(code) {
+      return WORLD_CURRENCIES.find((c) => c.code === code) || WORLD_CURRENCIES[0];
+    }
+
+    function formatCurrencyAmount(amount, currencyCode = "USD") {
+      const meta = getCurrencyMeta(currencyCode);
+      const val = Number(amount || 0).toFixed(2);
+      return `${meta.symbol}${val} ${meta.code}`;
+    }
+
+    window.__getCurrencyMeta = getCurrencyMeta;
+    window.__formatCurrencyAmount = formatCurrencyAmount;
+
     function showToast(msg) {
       const box = document.getElementById("toastBox");
       if (!box) return;
       box.textContent = msg;
       box.classList.remove("hidden");
       clearTimeout(window.__toastTimer);
-      window.__toastTimer = setTimeout(() => box.classList.add("hidden"), 4500);
+      window.__toastTimer = setTimeout(() => box.classList.add("hidden"), 5000);
     }
 
     function showView(viewId) {
@@ -478,6 +533,12 @@
       });
       const target = document.getElementById(viewId);
       if (target) target.classList.remove("hidden");
+
+      const isPublicStore = viewId === "storefrontView";
+      const banner = document.getElementById("platformNoticeBanner");
+      const authControls = document.getElementById("headerAuthControls");
+      if (banner) banner.classList.toggle("hidden", isPublicStore);
+      if (authControls) authControls.classList.toggle("hidden", isPublicStore);
     }
 
     function switchAuthTab(tab) {
@@ -510,14 +571,17 @@
       });
     }
 
-    function updateDiscountPreview() {
+    function updateDiscountPreview(currencyCode = "USD") {
       const price = parseFloat(document.getElementById("prodPrice").value) || 0;
       const disc = Math.min(99, Math.max(0, parseFloat(document.getElementById("prodDiscount").value) || 0));
       const finalPrice = price * (1 - disc / 100);
+      const formattedFinal = formatCurrencyAmount(finalPrice, currencyCode);
+      const formattedBase = formatCurrencyAmount(price, currencyCode);
       document.getElementById("discountPreviewText").innerHTML = disc > 0
-        ? `Descuento aplicado: <strong>${disc}% OFF</strong> · Precio final: <strong>$${finalPrice.toFixed(2)}</strong> (antes $${price.toFixed(2)})`
-        : `Precio final calculado: <strong>$${finalPrice.toFixed(2)}</strong>`;
+        ? `Descuento aplicado: <strong>${disc}% OFF</strong> · Precio final: <strong>${formattedFinal}</strong> (antes ${formattedBase})`
+        : `Precio final calculado: <strong>${formattedFinal}</strong>`;
     }
+    window.__updateDiscountPreview = updateDiscountPreview;
 
     document.getElementById("tabLogin").addEventListener("click", () => switchAuthTab("login"));
     document.getElementById("tabRegister").addEventListener("click", () => switchAuthTab("register"));
@@ -530,6 +594,9 @@
     });
     document.getElementById("editStoreType").addEventListener("change", (e) => {
       syncSectionsByStoreType(e.target.value, "editSectionsBox");
+    });
+    document.getElementById("editCurrency").addEventListener("change", (e) => {
+      updateDiscountPreview(e.target.value);
     });
     document.getElementById("addCustomSectionBtn").addEventListener("click", () => {
       const input = document.getElementById("newCustomSectionInput");
@@ -559,15 +626,24 @@
         document.getElementById("colorDesc").value = p.desc;
       });
     });
-    document.getElementById("prodPrice").addEventListener("input", updateDiscountPreview);
-    document.getElementById("prodDiscount").addEventListener("input", updateDiscountPreview);
+    document.getElementById("prodPrice").addEventListener("input", () => {
+      const curr = document.getElementById("editCurrency")?.value || "USD";
+      updateDiscountPreview(curr);
+    });
+    document.getElementById("prodDiscount").addEventListener("input", () => {
+      const curr = document.getElementById("editCurrency")?.value || "USD";
+      updateDiscountPreview(curr);
+    });
     document.getElementById("closeModalBtn").addEventListener("click", () => {
       document.getElementById("productModal").classList.add("hidden");
     });
 
+    populateCurrencySelects();
     syncSectionsByStoreType(document.getElementById("regStoreType").value, "regSectionsBox");
-    showView("authView");
-    switchAuthTab("login");
+    if (!new URLSearchParams(window.location.search).get("store")) {
+      showView("authView");
+      switchAuthTab("login");
+    }
   </script>
 
   <!-- MÓDULO FIREBASE (AUTH + FIRESTORE + ANALYTICS) -->
@@ -616,8 +692,12 @@
     let activePublicStoreData = null;
     let activePublicProducts = [];
     let selectedPublicSection = "Todos";
-    let pendingRegUser = null;
     let uploadedBase64Image = "";
+
+    function formatFirebaseError(err) {
+      const code = err?.code ? `[${err.code}] ` : "";
+      return code + (err?.message || "Error inesperado de Firebase.");
+    }
 
     function slugify(text) {
       return (text || "tienda")
@@ -644,18 +724,20 @@
       select.innerHTML = list.map((c) => `<option value="${c}">${c}</option>`).join("");
     }
 
-    function buildWhatsAppUrl(phone, product) {
+    function buildWhatsAppUrl(phone, product, currencyCode = "USD") {
       const cleanPhone = (phone || "").replace(/\D/g, "");
       const extraDetails = [
         product.color ? `Color: ${product.color}` : "",
         product.size ? `Talla: ${product.size}` : ""
       ].filter(Boolean).join(", ");
-      const text = `Hola, me interesa este producto: ${product.name}${extraDetails ? ` (${extraDetails})` : ""}, el precio es $${Number(product.finalPrice).toFixed(2)}. Quisiera pedirlo.`;
+      const formattedPrice = window.__formatCurrencyAmount(product.finalPrice, currencyCode);
+      const text = `Hola, me interesa este producto: ${product.name}${extraDetails ? ` (${extraDetails})` : ""}, el precio es ${formattedPrice}. Quisiera pedirlo.`;
       return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
     }
 
     async function loadAdminProducts() {
       if (!firebaseReady || !currentUser) return;
+      const currency = currentStoreData?.currency || "USD";
       const q = query(collection(db, "products"), where("storeUid", "==", currentUser.uid));
       const snap = await getDocs(q);
       currentStoreProducts = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -675,7 +757,7 @@
               <p class="font-bold text-sm text-slate-900 truncate">${p.name}</p>
               <p class="text-xs text-slate-500">${p.category} ${p.size ? `· Talla: ${p.size}` : ""} ${p.color ? `· ${p.color}` : ""}</p>
               <p class="text-sm font-semibold text-blue-700 mt-1">
-                $${Number(p.finalPrice).toFixed(2)}
+                ${window.__formatCurrencyAmount(p.finalPrice, currency)}
                 ${p.discountPercent > 0 ? `<span class="text-xs text-rose-600 ml-1">(${p.discountPercent}% OFF)</span>` : ""}
               </p>
               <p class="text-xs ${p.stock > 0 ? "text-emerald-700" : "text-rose-600 font-semibold"}">
@@ -707,16 +789,20 @@
           document.getElementById("prodCategory").value = prod.category || "";
           document.getElementById("prodImageUrl").value = prod.imageUrl || "";
           document.getElementById("prodDesc").value = prod.description || "";
-          updateDiscountPreview();
+          window.__updateDiscountPreview(currentStoreData?.currency || "USD");
           document.getElementById("productForm").scrollIntoView({ behavior: "smooth" });
         });
       });
 
       listEl.querySelectorAll(".del-prod-btn").forEach((b) => {
         b.addEventListener("click", async () => {
-          await deleteDoc(doc(db, "products", b.dataset.delId));
-          showToast("Producto eliminado.");
-          await loadAdminProducts();
+          try {
+            await deleteDoc(doc(db, "products", b.dataset.delId));
+            showToast("Producto eliminado.");
+            await loadAdminProducts();
+          } catch (err) {
+            showToast("Error al eliminar: " + formatFirebaseError(err));
+          }
         });
       });
     }
@@ -729,15 +815,45 @@
           currentStoreData = snap.exists() ? snap.data() : null;
         }
         const isExempt = (currentUser.email || "").toLowerCase() === ADMIN_EXEMPT_EMAIL;
-        if (!isExempt && !currentStoreData?.subscriptionActive) {
+        const isSubscribed = isExempt || currentStoreData?.subscriptionActive === true;
+
+        if (!isSubscribed) {
+          document.getElementById("btnOpenAdmin").classList.add("hidden");
           showView("authView");
           document.getElementById("paypalGateBox").classList.remove("hidden");
+          showToast("Acceso bloqueado: tu suscripción no está activa.");
           return;
         }
 
+        if (!currentStoreData) {
+          currentStoreData = {
+            uid: currentUser.uid,
+            email: currentUser.email,
+            storeName: "Mi Tienda",
+            storeSlug: slugify(currentUser.email.split("@")[0]),
+            storeType: "Otros",
+            currency: "USD",
+            description: "Catálogo de productos",
+            whatsapp: "",
+            subscriptionActive: true,
+            sections: ["Todos", "Destacados", "Novedades", "Ofertas"],
+            theme: {
+              bg: "#f8fafc",
+              primary: "#1d4ed8",
+              titleColor: "#0f172a",
+              descColor: "#475569",
+              titleSize: "2.15rem",
+              descSize: "1rem"
+            }
+          };
+          await setDoc(doc(db, "stores", currentUser.uid), currentStoreData);
+        }
+
         showView("adminView");
+        const currCode = currentStoreData.currency || "USD";
+        const currMeta = window.__getCurrencyMeta(currCode);
         document.getElementById("adminStoreTitle").textContent = currentStoreData.storeName;
-        document.getElementById("adminStoreEmail").textContent = `Cuenta: ${currentStoreData.email} · Tipo: ${currentStoreData.storeType}`;
+        document.getElementById("adminStoreEmail").textContent = `Cuenta: ${currentStoreData.email} · Tipo: ${currentStoreData.storeType} · Moneda: ${currMeta.label}`;
 
         const uniqueUrl = `${window.location.origin}${window.location.pathname}?store=${encodeURIComponent(currentStoreData.storeSlug)}`;
         const linkEl = document.getElementById("adminUniqueLinkText");
@@ -747,6 +863,7 @@
         document.getElementById("editStoreName").value = currentStoreData.storeName || "";
         document.getElementById("editWhatsapp").value = currentStoreData.whatsapp || "";
         document.getElementById("editStoreType").value = currentStoreData.storeType || "Otros";
+        document.getElementById("editCurrency").value = currCode;
         document.getElementById("editDescription").value = currentStoreData.description || "";
 
         const t = currentStoreData.theme || {};
@@ -759,15 +876,17 @@
 
         syncSectionsByStoreType(currentStoreData.storeType, "editSectionsBox", currentStoreData.sections || ["Todos"]);
         populateProductCategorySelect(currentStoreData.sections || ["Todos"]);
+        window.__updateDiscountPreview(currCode);
         await loadAdminProducts();
       } catch (err) {
-        showToast("Error al abrir el panel: " + (err?.message || "Revisa Firestore."));
+        showToast("Error al abrir el panel: " + formatFirebaseError(err));
       }
     }
 
     function renderPublicCatalog() {
       const search = (document.getElementById("publicSearchInput").value || "").trim().toLowerCase();
       const primaryColor = activePublicStoreData?.theme?.primary || "#1d4ed8";
+      const currencyCode = activePublicStoreData?.currency || "USD";
 
       const filtered = activePublicProducts.filter((p) => {
         const matchSec = selectedPublicSection === "Todos" || p.category === selectedPublicSection;
@@ -786,7 +905,7 @@
 
       grid.innerHTML = filtered.map((p) => {
         const isOutOfStock = (p.stock ?? 0) <= 0;
-        const waUrl = buildWhatsAppUrl(activePublicStoreData.whatsapp, p);
+        const waUrl = buildWhatsAppUrl(activePublicStoreData.whatsapp, p, currencyCode);
 
         return `
           <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between">
@@ -799,9 +918,9 @@
                 <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">${p.category}</p>
                 <h3 class="font-bold text-slate-900 text-base line-clamp-1">${p.name}</h3>
                 <p class="text-xs text-slate-500 line-clamp-2">${p.description}</p>
-                <div class="pt-1 flex items-center gap-2">
-                  <span class="font-bold text-lg text-slate-900">$${Number(p.finalPrice).toFixed(2)}</span>
-                  ${p.discountPercent > 0 ? `<span class="text-xs line-through text-slate-400">$${Number(p.price).toFixed(2)}</span>` : ""}
+                <div class="pt-1 flex items-center gap-2 flex-wrap">
+                  <span class="font-bold text-lg text-slate-900">${window.__formatCurrencyAmount(p.finalPrice, currencyCode)}</span>
+                  ${p.discountPercent > 0 ? `<span class="text-xs line-through text-slate-400">${window.__formatCurrencyAmount(p.price, currencyCode)}</span>` : ""}
                 </div>
                 <p class="text-xs ${isOutOfStock ? "text-rose-600 font-semibold" : "text-emerald-700"}">
                   ${isOutOfStock ? "Agotado (No disponible)" : `Stock disponible: ${p.stock}`}
@@ -835,8 +954,8 @@
           document.getElementById("modalDesc").textContent = p.description;
 
           document.getElementById("modalPriceBox").innerHTML = `
-            <span class="text-xl font-extrabold text-slate-900">$${Number(p.finalPrice).toFixed(2)}</span>
-            ${p.discountPercent > 0 ? `<span class="text-sm line-through text-slate-400">$${Number(p.price).toFixed(2)}</span><span class="text-xs font-bold bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full">${p.discountPercent}% OFF</span>` : ""}
+            <span class="text-xl font-extrabold text-slate-900">${window.__formatCurrencyAmount(p.finalPrice, currencyCode)}</span>
+            ${p.discountPercent > 0 ? `<span class="text-sm line-through text-slate-400">${window.__formatCurrencyAmount(p.price, currencyCode)}</span><span class="text-xs font-bold bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full">${p.discountPercent}% OFF</span>` : ""}
           `;
 
           document.getElementById("modalStock").textContent = isOutOfStock ? "Agotado (No disponible)" : `${p.stock} unidades disponibles`;
@@ -847,7 +966,7 @@
 
           document.getElementById("modalActionBox").innerHTML = isOutOfStock
             ? `<button type="button" disabled class="w-full py-3 rounded-xl bg-slate-200 text-slate-500 font-semibold text-sm cursor-not-allowed">No disponible (Agotado)</button>`
-            : `<a href="${buildWhatsAppUrl(activePublicStoreData.whatsapp, p)}" target="_blank" rel="noopener noreferrer" style="background-color:${modalPrimary}" class="block w-full py-3 rounded-xl text-white font-semibold text-sm text-center hover:opacity-95">Pedir por WhatsApp</a>`;
+            : `<a href="${buildWhatsAppUrl(activePublicStoreData.whatsapp, p, currencyCode)}" target="_blank" rel="noopener noreferrer" style="background-color:${modalPrimary}" class="block w-full py-3 rounded-xl text-white font-semibold text-sm text-center hover:opacity-95">Pedir por WhatsApp</a>`;
 
           document.getElementById("productModal").classList.remove("hidden");
         });
@@ -887,7 +1006,9 @@
         activePublicStoreData = { uid: storeDoc.id, ...storeDoc.data() };
         applyStoreThemeToPage(activePublicStoreData.theme || {});
 
+        const currMeta = window.__getCurrencyMeta(activePublicStoreData.currency || "USD");
         document.getElementById("storeTypeBadge").textContent = `${activePublicStoreData.storeType} · CATÁLOGO OFICIAL`;
+        document.getElementById("storeCurrencyBadge").textContent = `Moneda: ${currMeta.label}`;
         document.getElementById("publicStoreName").textContent = activePublicStoreData.storeName;
         document.getElementById("publicStoreDesc").textContent = activePublicStoreData.description;
 
@@ -900,7 +1021,7 @@
         renderPublicCatalog();
         showView("storefrontView");
       } catch (err) {
-        showToast("Error al cargar catálogo: " + (err?.message || "Revisa Firestore."));
+        showToast("Error al cargar catálogo: " + formatFirebaseError(err));
       }
     }
 
@@ -915,7 +1036,7 @@
       try {
         await signInWithEmailAndPassword(auth, document.getElementById("loginEmail").value.trim().toLowerCase(), document.getElementById("loginPassword").value);
       } catch (err) {
-        showToast("Error al iniciar sesión: " + (err?.message || "Verifica tus datos."));
+        showToast("Error al iniciar sesión: " + formatFirebaseError(err));
       } finally {
         btn.disabled = false;
       }
@@ -935,6 +1056,8 @@
         const storeName = document.getElementById("regStoreName").value.trim();
         const whatsapp = document.getElementById("regWhatsapp").value.trim().replace(/\D/g, "");
         const storeType = document.getElementById("regStoreType").value;
+        const currency = document.getElementById("regCurrency").value || "USD";
+        const currMeta = window.__getCurrencyMeta(currency);
         const description = document.getElementById("regDescription").value.trim();
         const sections = Array.from(document.querySelectorAll("#regSectionsBox .section-checkbox:checked")).map((el) => el.value);
         const storeSlug = slugify(storeName);
@@ -947,6 +1070,7 @@
           storeName,
           storeSlug,
           storeType,
+          currency,
           description,
           whatsapp,
           subscriptionActive: isAdminExempt ? true : false,
@@ -967,31 +1091,19 @@
         currentStoreData = storeDoc;
 
         if (!isAdminExempt) {
-          pendingRegUser = cred.user;
+          document.getElementById("gateCurrencyInfo").innerHTML =
+            `Esta app solo acepta pagos por medio de <strong>PayPal</strong>. La suscripción de la plataforma es de <strong>$20 USD/mes</strong> por PayPal, y tu catálogo mostrará sus precios en <strong>${currMeta.label}</strong> una vez activada.`;
           document.getElementById("paypalGateBox").classList.remove("hidden");
-          showToast("Cuenta creada. Activa tu suscripción de $20/mes por PayPal para entrar.");
+          showToast("Cuenta creada con suscripción inactiva. Completa el pago en PayPal.");
         } else {
           showToast("¡Bienvenido! Acceso de administrador activado.");
           await openAdminPanel();
         }
       } catch (err) {
-        showToast("Error al crear cuenta: " + (err?.message || "Intenta de nuevo."));
+        showToast("Error al crear cuenta: " + formatFirebaseError(err));
       } finally {
         btn.disabled = false;
       }
-    });
-
-    document.getElementById("confirmSubBtn").addEventListener("click", async () => {
-      const targetUid = currentUser?.uid || pendingRegUser?.uid;
-      if (!firebaseReady || !targetUid) {
-        showToast("Inicia sesión primero para verificar tu cuenta.");
-        return;
-      }
-      await updateDoc(doc(db, "stores", targetUid), { subscriptionActive: true });
-      if (currentStoreData) currentStoreData.subscriptionActive = true;
-      document.getElementById("paypalGateBox").classList.add("hidden");
-      showToast("Suscripción activada. Abriendo tu panel...");
-      await openAdminPanel();
     });
 
     document.getElementById("btnLogout").addEventListener("click", async () => {
@@ -1013,37 +1125,46 @@
     document.getElementById("brandHomeBtn").addEventListener("click", () => {
       const s = new URLSearchParams(window.location.search).get("store");
       if (s) viewPublicStore(s);
-      else if (currentUser && currentStoreData) openAdminPanel();
+      else if (currentUser && currentStoreData && (currentStoreData.subscriptionActive === true || (currentUser.email || "").toLowerCase() === ADMIN_EXEMPT_EMAIL)) openAdminPanel();
       else showView("authView");
     });
 
     document.getElementById("storeSettingsForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       if (!firebaseReady || !currentUser) return;
-      const storeName = document.getElementById("editStoreName").value.trim();
-      const whatsapp = document.getElementById("editWhatsapp").value.trim().replace(/\D/g, "");
-      const storeType = document.getElementById("editStoreType").value;
-      const description = document.getElementById("editDescription").value.trim();
-      const sections = Array.from(document.querySelectorAll("#editSectionsBox .section-checkbox:checked")).map((el) => el.value);
-      const finalSections = sections.length ? sections : ["Todos"];
-      const theme = {
-        bg: document.getElementById("colorBg").value,
-        primary: document.getElementById("colorPrimary").value,
-        titleColor: document.getElementById("colorTitle").value,
-        descColor: document.getElementById("colorDesc").value,
-        titleSize: document.getElementById("sizeTitle").value,
-        descSize: document.getElementById("sizeDesc").value
-      };
-      const updated = { storeName, storeSlug: slugify(storeName), whatsapp, storeType, description, sections: finalSections, theme };
-      await updateDoc(doc(db, "stores", currentUser.uid), updated);
-      currentStoreData = { ...currentStoreData, ...updated };
-      applyStoreThemeToPage(theme);
-      populateProductCategorySelect(finalSections);
-      const uniqueUrl = `${window.location.origin}${window.location.pathname}?store=${encodeURIComponent(currentStoreData.storeSlug)}`;
-      document.getElementById("adminStoreTitle").textContent = storeName;
-      document.getElementById("adminUniqueLinkText").href = uniqueUrl;
-      document.getElementById("adminUniqueLinkText").textContent = uniqueUrl;
-      showToast("Configuración guardada y actualizada.");
+      try {
+        const storeName = document.getElementById("editStoreName").value.trim();
+        const whatsapp = document.getElementById("editWhatsapp").value.trim().replace(/\D/g, "");
+        const storeType = document.getElementById("editStoreType").value;
+        const currency = document.getElementById("editCurrency").value || "USD";
+        const currMeta = window.__getCurrencyMeta(currency);
+        const description = document.getElementById("editDescription").value.trim();
+        const sections = Array.from(document.querySelectorAll("#editSectionsBox .section-checkbox:checked")).map((el) => el.value);
+        const finalSections = sections.length ? sections : ["Todos"];
+        const theme = {
+          bg: document.getElementById("colorBg").value,
+          primary: document.getElementById("colorPrimary").value,
+          titleColor: document.getElementById("colorTitle").value,
+          descColor: document.getElementById("colorDesc").value,
+          titleSize: document.getElementById("sizeTitle").value,
+          descSize: document.getElementById("sizeDesc").value
+        };
+        const updated = { storeName, storeSlug: slugify(storeName), whatsapp, storeType, currency, description, sections: finalSections, theme };
+        await updateDoc(doc(db, "stores", currentUser.uid), updated);
+        currentStoreData = { ...currentStoreData, ...updated };
+        applyStoreThemeToPage(theme);
+        populateProductCategorySelect(finalSections);
+        window.__updateDiscountPreview(currency);
+        const uniqueUrl = `${window.location.origin}${window.location.pathname}?store=${encodeURIComponent(currentStoreData.storeSlug)}`;
+        document.getElementById("adminStoreTitle").textContent = storeName;
+        document.getElementById("adminStoreEmail").textContent = `Cuenta: ${currentStoreData.email} · Tipo: ${storeType} · Moneda: ${currMeta.label}`;
+        document.getElementById("adminUniqueLinkText").href = uniqueUrl;
+        document.getElementById("adminUniqueLinkText").textContent = uniqueUrl;
+        await loadAdminProducts();
+        showToast("Configuración guardada y actualizada.");
+      } catch (err) {
+        showToast("Error al guardar configuración: " + formatFirebaseError(err));
+      }
     });
 
     document.getElementById("prodImageFile").addEventListener("change", (e) => {
@@ -1063,65 +1184,73 @@
       document.getElementById("productFormTitle").textContent = "2. Añadir Producto al Catálogo";
       document.getElementById("cancelEditProdBtn").classList.add("hidden");
       uploadedBase64Image = "";
-      updateDiscountPreview();
+      window.__updateDiscountPreview(currentStoreData?.currency || "USD");
     });
 
     document.getElementById("productForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       if (!firebaseReady || !currentUser) return;
-      const editingId = document.getElementById("editingProductId").value;
-      const price = parseFloat(document.getElementById("prodPrice").value) || 0;
-      const discountPercent = Math.min(99, Math.max(0, parseFloat(document.getElementById("prodDiscount").value) || 0));
-      const finalPrice = Number((price * (1 - discountPercent / 100)).toFixed(2));
-      const stock = Math.max(0, parseInt(document.getElementById("prodStock").value, 10) || 0);
+      try {
+        const editingId = document.getElementById("editingProductId").value;
+        const price = parseFloat(document.getElementById("prodPrice").value) || 0;
+        const discountPercent = Math.min(99, Math.max(0, parseFloat(document.getElementById("prodDiscount").value) || 0));
+        const finalPrice = Number((price * (1 - discountPercent / 100)).toFixed(2));
+        const stock = Math.max(0, parseInt(document.getElementById("prodStock").value, 10) || 0);
 
-      const productData = {
-        storeUid: currentUser.uid,
-        name: document.getElementById("prodName").value.trim(),
-        price,
-        discountPercent,
-        finalPrice,
-        stock,
-        size: document.getElementById("prodSize").value.trim(),
-        color: document.getElementById("prodColor").value.trim(),
-        type: document.getElementById("prodType").value.trim(),
-        category: document.getElementById("prodCategory").value,
-        imageUrl: document.getElementById("prodImageUrl").value.trim() || "https://via.placeholder.com/400x300?text=Producto",
-        description: document.getElementById("prodDesc").value.trim(),
-        updatedAt: Date.now()
-      };
+        const productData = {
+          storeUid: currentUser.uid,
+          name: document.getElementById("prodName").value.trim(),
+          price,
+          discountPercent,
+          finalPrice,
+          stock,
+          size: document.getElementById("prodSize").value.trim(),
+          color: document.getElementById("prodColor").value.trim(),
+          type: document.getElementById("prodType").value.trim(),
+          category: document.getElementById("prodCategory").value,
+          imageUrl: document.getElementById("prodImageUrl").value.trim() || "https://via.placeholder.com/400x300?text=Producto",
+          description: document.getElementById("prodDesc").value.trim(),
+          updatedAt: Date.now()
+        };
 
-      if (editingId) {
-        await updateDoc(doc(db, "products", editingId), productData);
-        showToast("Producto actualizado.");
-      } else {
-        await addDoc(collection(db, "products"), { ...productData, createdAt: Date.now() });
-        showToast("Producto añadido.");
+        if (editingId) {
+          await updateDoc(doc(db, "products", editingId), productData);
+          showToast("Producto actualizado.");
+        } else {
+          await addDoc(collection(db, "products"), { ...productData, createdAt: Date.now() });
+          showToast("Producto añadido.");
+        }
+
+        document.getElementById("productForm").reset();
+        document.getElementById("editingProductId").value = "";
+        document.getElementById("productFormTitle").textContent = "2. Añadir Producto al Catálogo";
+        document.getElementById("cancelEditProdBtn").classList.add("hidden");
+        uploadedBase64Image = "";
+        window.__updateDiscountPreview(currentStoreData?.currency || "USD");
+        await loadAdminProducts();
+      } catch (err) {
+        showToast("Error al guardar producto: " + formatFirebaseError(err));
       }
-
-      document.getElementById("productForm").reset();
-      document.getElementById("editingProductId").value = "";
-      document.getElementById("productFormTitle").textContent = "2. Añadir Producto al Catálogo";
-      document.getElementById("cancelEditProdBtn").classList.add("hidden");
-      uploadedBase64Image = "";
-      updateDiscountPreview();
-      await loadAdminProducts();
     });
 
     document.getElementById("suggestionForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       if (!firebaseReady) return;
-      const msg = document.getElementById("suggestionText").value.trim();
-      if (!msg) return;
-      await addDoc(collection(db, "suggestions"), {
-        toAdminEmail: ADMIN_EXEMPT_EMAIL,
-        fromEmail: currentUser?.email || "visitante",
-        storeName: currentStoreData?.storeName || "N/A",
-        message: msg,
-        createdAt: Date.now()
-      });
-      document.getElementById("suggestionText").value = "";
-      showToast("Mensaje enviado a " + ADMIN_EXEMPT_EMAIL + ".");
+      try {
+        const msg = document.getElementById("suggestionText").value.trim();
+        if (!msg) return;
+        await addDoc(collection(db, "suggestions"), {
+          toAdminEmail: ADMIN_EXEMPT_EMAIL,
+          fromEmail: currentUser?.email || "visitante",
+          storeName: currentStoreData?.storeName || "N/A",
+          message: msg,
+          createdAt: Date.now()
+        });
+        document.getElementById("suggestionText").value = "";
+        showToast("Mensaje enviado a " + ADMIN_EXEMPT_EMAIL + ".");
+      } catch (err) {
+        showToast("Error al enviar mensaje: " + formatFirebaseError(err));
+      }
     });
 
     document.getElementById("publicSearchInput").addEventListener("input", renderPublicCatalog);
@@ -1159,12 +1288,13 @@
         try {
           const snap = await getDoc(doc(db, "stores", user.uid));
           currentStoreData = snap.exists() ? snap.data() : null;
-        } catch (_) {
+        } catch (err) {
           currentStoreData = null;
+          showToast("Aviso al leer tienda: " + formatFirebaseError(err));
         }
 
         const isExempt = (user.email || "").toLowerCase() === ADMIN_EXEMPT_EMAIL;
-        const hasActiveSub = isExempt || Boolean(currentStoreData?.subscriptionActive);
+        const hasActiveSub = isExempt || currentStoreData?.subscriptionActive === true;
 
         badge.textContent = user.email;
         badge.classList.remove("hidden");
@@ -1172,20 +1302,26 @@
         btnAuth.classList.add("hidden");
 
         if (!hasActiveSub) {
-          showView("authView");
-          document.getElementById("paypalGateBox").classList.remove("hidden");
-          showToast("Activa tu suscripción de $20/mes vía PayPal para entrar al panel.");
+          btnAdmin.classList.add("hidden");
+          if (!new URLSearchParams(window.location.search).get("store")) {
+            const currMeta = window.__getCurrencyMeta(currentStoreData?.currency || "USD");
+            document.getElementById("gateCurrencyInfo").innerHTML =
+              `Esta app solo acepta pagos por medio de <strong>PayPal</strong>. La suscripción de la plataforma es de <strong>$20 USD/mes</strong> por PayPal, y tu catálogo mostrará sus precios en <strong>${currMeta.label}</strong> una vez activada.`;
+            showView("authView");
+            document.getElementById("paypalGateBox").classList.remove("hidden");
+            showToast("Acceso bloqueado: completa tu suscripción de $20 USD/mes vía PayPal.");
+          }
           return;
         }
 
         btnAdmin.classList.remove("hidden");
-        if (!new URLSearchParams(window.location.search).get("store") && currentStoreData) {
+        if (!new URLSearchParams(window.location.search).get("store")) {
           await openAdminPanel();
         }
       });
     } catch (err) {
       firebaseReady = false;
-      showToast("Aviso de Firebase: " + (err?.message || "Revisa la configuración."));
+      showToast("Aviso de Firebase: " + formatFirebaseError(err));
     }
   </script>
 </body>
