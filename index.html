@@ -73,17 +73,18 @@
         </button>
       </div>
 
-      <form id="loginForm" class="space-y-4 max-w-md">
+      <form id="loginForm" class="space-y-4 max-w-md" novalidate>
         <h2 class="text-xl font-bold text-slate-900">Inicia sesión en tu tienda</h2>
         <div>
           <label class="block text-sm font-medium text-slate-700 mb-1">Correo electrónico</label>
-          <input id="loginEmail" type="email" required class="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm" placeholder="tu@correo.com" />
+          <input id="loginEmail" type="email" required autocomplete="email" class="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm" placeholder="tu@correo.com" />
         </div>
         <div>
           <label class="block text-sm font-medium text-slate-700 mb-1">Contraseña</label>
-          <input id="loginPassword" type="password" required class="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm" placeholder="••••••••" />
+          <input id="loginPassword" type="password" required autocomplete="current-password" class="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm" placeholder="••••••••" />
         </div>
-        <button id="loginSubmitBtn" type="submit" class="w-full py-2.5 px-4 rounded-lg bg-blue-700 text-white font-semibold text-sm hover:bg-blue-800 transition">
+        <p id="loginStatusText" class="hidden text-xs font-medium rounded-lg px-3 py-2 bg-slate-100 text-slate-700"></p>
+        <button id="loginSubmitBtn" type="submit" class="w-full py-2.5 px-4 rounded-lg bg-blue-700 text-white font-semibold text-sm hover:bg-blue-800 transition disabled:opacity-60 disabled:cursor-not-allowed">
           Entrar al panel
         </button>
       </form>
@@ -712,8 +713,67 @@
     let activePublicProducts = [];
     let selectedPublicSection = "Todos";
     let uploadedBase64Image = "";
+    let isLoggingIn = false;
+    let loginCooldownUntil = 0;
+    let loginCooldownInterval = null;
+
+    function setLoginStatus(message, type = "info") {
+      const box = document.getElementById("loginStatusText");
+      if (!box) return;
+      if (!message) {
+        box.textContent = "";
+        box.classList.add("hidden");
+        return;
+      }
+      box.textContent = message;
+      box.classList.remove("hidden");
+      box.className = "text-xs font-medium rounded-lg px-3 py-2 " + (
+        type === "error"
+          ? "bg-rose-50 text-rose-800 border border-rose-200"
+          : type === "success"
+          ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+          : "bg-slate-100 text-slate-700"
+      );
+    }
+
+    function startLoginCooldown(seconds = 30) {
+      const btn = document.getElementById("loginSubmitBtn");
+      loginCooldownUntil = Date.now() + seconds * 1000;
+      clearInterval(loginCooldownInterval);
+
+      const tick = () => {
+        const remaining = Math.ceil((loginCooldownUntil - Date.now()) / 1000);
+        if (remaining <= 0) {
+          clearInterval(loginCooldownInterval);
+          loginCooldownUntil = 0;
+          if (btn && !isLoggingIn) {
+            btn.disabled = false;
+            btn.textContent = "Entrar al panel";
+          }
+          setLoginStatus("Ya puedes intentar iniciar sesión nuevamente.", "info");
+          return;
+        }
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = `Espera ${remaining}s...`;
+        }
+        setLoginStatus(`Pausa de seguridad activa por intentos repetidos. Espera ${remaining}s antes de reintentar.`, "error");
+      };
+
+      tick();
+      loginCooldownInterval = setInterval(tick, 1000);
+    }
 
     function formatFirebaseError(err) {
+      if (err?.code === "auth/too-many-requests") {
+        return "Demasiados intentos seguidos en este dispositivo o red. Espera unos minutos y haz un solo intento.";
+      }
+      if (err?.code === "auth/invalid-credential" || err?.code === "auth/wrong-password" || err?.code === "auth/user-not-found") {
+        return "Correo o contraseña incorrectos.";
+      }
+      if (err?.code === "auth/invalid-email") {
+        return "El formato del correo electrónico no es válido.";
+      }
       const code = err?.code ? `[${err.code}] ` : "";
       return code + (err?.message || "Error inesperado de Firebase.");
     }
@@ -1078,18 +1138,51 @@
 
     document.getElementById("loginForm").addEventListener("submit", async (e) => {
       e.preventDefault();
+      if (isLoggingIn) return;
+
+      const remainingCooldown = Math.ceil((loginCooldownUntil - Date.now()) / 1000);
+      if (remainingCooldown > 0) {
+        setLoginStatus(`Espera ${remainingCooldown}s antes de volver a intentar iniciar sesión.`, "error");
+        return;
+      }
+
       if (!firebaseReady) {
+        setLoginStatus("Firebase aún no está disponible. Revisa la configuración del proyecto.", "error");
         showToast("Firebase aún no está disponible. Revisa la configuración del proyecto.");
         return;
       }
+
+      const email = (document.getElementById("loginEmail").value || "").trim().toLowerCase();
+      const password = document.getElementById("loginPassword").value || "";
+      if (!email || !password) {
+        setLoginStatus("Escribe tu correo y contraseña antes de entrar.", "error");
+        return;
+      }
+
       const btn = document.getElementById("loginSubmitBtn");
+      isLoggingIn = true;
       btn.disabled = true;
+      btn.textContent = "Verificando acceso...";
+      setLoginStatus("Verificando credenciales con un solo intento...", "info");
+
       try {
-        await signInWithEmailAndPassword(auth, document.getElementById("loginEmail").value.trim().toLowerCase(), document.getElementById("loginPassword").value);
+        await signInWithEmailAndPassword(auth, email, password);
+        setLoginStatus("Acceso correcto. Cargando panel...", "success");
       } catch (err) {
-        showToast("Error al iniciar sesión: " + formatFirebaseError(err));
+        const friendlyMsg = formatFirebaseError(err);
+        setLoginStatus(friendlyMsg, "error");
+        showToast("Error al iniciar sesión: " + friendlyMsg);
+        if (err?.code === "auth/too-many-requests") {
+          startLoginCooldown(45);
+        } else {
+          startLoginCooldown(4);
+        }
       } finally {
-        btn.disabled = false;
+        isLoggingIn = false;
+        if (Date.now() >= loginCooldownUntil && btn) {
+          btn.disabled = false;
+          btn.textContent = "Entrar al panel";
+        }
       }
     });
 
@@ -1163,6 +1256,7 @@
       try { if (auth) await signOut(auth); } catch (_) {}
       currentUser = null;
       currentStoreData = null;
+      setLoginStatus("", "info");
       showView("authView");
       showToast("Sesión cerrada.");
     });
